@@ -23,11 +23,11 @@ This does not work on cellular directly because iOS does not provide a manual HT
 
 ## Recommended Architecture
 
-Use the VPS as a Tailscale subnet router for only the current IP routes behind Apple location lookup hosts.
+Use the VPS as a Tailscale app connector for only Apple location lookup hosts.
 
 ```text
 iPhone on cellular
-  -> Tailscale route for gs-loc IP only
+  -> Tailscale app connector route for gs-loc domains only
   -> VPS tailscale0
   -> transparent redirect for routed gs-loc:443 packets
   -> mitmproxy transparent listener
@@ -35,22 +35,22 @@ iPhone on cellular
   -> real Apple gs-loc server
 ```
 
-Traffic that does not match the advertised Apple location routes does not enter the VPS and continues through normal cellular networking.
+Traffic that does not match the Apple location app connector domains does not enter the VPS and continues through normal cellular networking.
 
 ## VPS Components
 
-### Tailscale Subnet Router
+### Tailscale App Connector
 
-The VPS advertises narrow `/32` routes for IPv4 addresses currently returned by:
+The VPS is configured as a Tailscale app connector for:
 
 - `gs-loc.apple.com`
 - `gs-loc-cn.apple.com`
 
-IPv6 is disabled for this first version unless testing shows iOS prefers IPv6 for `gs-loc`. Starting with IPv4 only keeps the firewall rules and route updates easier to reason about.
+The app connector discovers current destination IPs for these domains and advertises matching routes to the tailnet. This replaces a custom DNS-to-route updater for the first implementation.
 
-### Route Updater
+### Manual Subnet Route Fallback
 
-A small updater service runs on the VPS and periodically:
+If app connectors are unavailable or do not route these domains from iOS as expected, fall back to a small updater service that runs on the VPS and periodically:
 
 1. Resolves `gs-loc.apple.com` and `gs-loc-cn.apple.com`.
 2. Filters results to public IPv4 addresses.
@@ -58,7 +58,7 @@ A small updater service runs on the VPS and periodically:
 4. Updates Tailscale advertised routes to the same `/32` list.
 5. Restarts or reapplies Tailscale routing only when the route set changes.
 
-The updater should keep the previous route set if DNS resolution fails, to avoid breaking spoofing during temporary DNS issues.
+The fallback updater should keep the previous route set if DNS resolution fails, to avoid breaking spoofing during temporary DNS issues.
 
 ### Transparent MITM Proxy
 
@@ -69,7 +69,7 @@ mitmproxy runs on the VPS in transparent mode with:
 - `WAYPOINT_SPOOF_LAT` and `WAYPOINT_SPOOF_LON` set to the active target.
 - An allow-list restricted to `gs-loc.apple.com` and `gs-loc-cn.apple.com`.
 
-The VPS firewall redirects only destination port `443` traffic whose destination IP is in the Apple-location ipset/nft set to mitmproxy's transparent listener.
+For the Tailscale app connector implementation, the VPS firewall redirects TCP port `443` traffic arriving on `tailscale0` to mitmproxy's transparent listener, because only the configured app connector domains should be routed to the VPS on that path. If logs show unrelated HTTPS traffic arriving on `tailscale0`, tighten this with an explicit ipset/nft destination set or stop and switch to the manual subnet-route fallback.
 
 ### Certificate Trust
 
@@ -89,11 +89,11 @@ The iPhone stays connected to Tailscale, but does not use the VPS as an exit nod
 
 Required tailnet behavior:
 
-- iPhone accepts subnet routes from the VPS.
-- iPhone routes only advertised Apple location `/32` destinations through Tailscale.
+- iPhone accepts app connector routes from the VPS.
+- iPhone routes only Apple location app connector destinations through Tailscale.
 - Normal internet traffic remains direct over cellular.
 
-If Tailscale iOS refuses or inconsistently applies these narrow routes, implementation stops and reports that the preferred design is blocked. Exit-node mode remains a manual fallback choice, not automatic behavior.
+If Tailscale iOS refuses or inconsistently applies these narrow routes, implementation stops and reports that the preferred design is blocked. Manual subnet routes and exit-node mode remain fallback choices, not automatic behavior.
 
 ## Security And Reliability
 
@@ -106,23 +106,24 @@ If Tailscale iOS refuses or inconsistently applies these narrow routes, implemen
 
 ## Failure Modes
 
-- Apple changes `gs-loc` IPs: the updater refreshes advertised routes and firewall sets.
+- Apple changes `gs-loc` IPs: the app connector discovers new routes; manual fallback uses the updater to refresh advertised routes and firewall sets.
 - iPhone uses IPv6 for `gs-loc`: initial implementation will miss the traffic; add IPv6 route/firewall support if observed.
-- Tailscale iOS does not use subnet routes for internet destinations: stop and ask whether to use exit-node mode despite routing all phone traffic through the VPS.
+- Tailscale iOS does not use app connector routes for internet destinations: stop and ask whether to try manual subnet routes or exit-node mode.
 - mitmproxy CA mismatch: WLOC TLS fails until the iPhone trusts the correct CA.
 - Apple validates additional location channels: spoofing may still work partially; inspect VPS logs for non-WLOC location traffic.
 
 ## Testing Plan
 
 1. Confirm Tailscale device connectivity between iPhone and VPS.
-2. Advertise one temporary test `/32` route from the VPS and verify the iPhone routes only that IP through Tailscale.
-3. Start mitmproxy transparent mode on the VPS and confirm it receives only `gs-loc` traffic.
-4. Trigger location refresh on cellular with Wi-Fi off.
-5. Confirm VPS logs show `SPOOFED WLOC RESPONSE`.
-6. Confirm Maps/Compass moves to the target coordinate.
-7. Confirm Snapchat/TikTok continue loading while spoofing is active.
-8. Confirm disabling the route updater or Tailscale restores normal direct behavior.
+2. Configure a custom Tailscale app connector for `gs-loc.apple.com` and `gs-loc-cn.apple.com`.
+3. Confirm app connector route discovery advertises only Apple location destinations.
+4. Start mitmproxy transparent mode on the VPS and confirm it receives only `gs-loc` traffic.
+5. Trigger location refresh on cellular with Wi-Fi off.
+6. Confirm VPS logs show `SPOOFED WLOC RESPONSE`.
+7. Confirm Maps/Compass moves to the target coordinate.
+8. Confirm Snapchat/TikTok continue loading while spoofing is active.
+9. Confirm disabling the app connector or Tailscale restores normal direct behavior.
 
 ## Fallback Criterion
 
-The implementation should first attempt the subnet-route design. If iPhone Tailscale does not honor public `/32` subnet routes reliably, do not keep iterating blindly. Report the evidence and ask before switching to an exit-node design.
+The implementation should first attempt the Tailscale app connector design. If iPhone Tailscale does not honor app connector routes reliably, do not keep iterating blindly. Report the evidence and ask before switching to manual subnet routes or an exit-node design.
