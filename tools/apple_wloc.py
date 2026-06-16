@@ -6,6 +6,7 @@ import gzip
 
 WLOC_RESPONSE_PREFIX = b"\x00\x01\x00\x00\x00\x01\x00\x00"
 COORD_SCALE = 100_000_000
+DEFAULT_HORIZONTAL_ACCURACY = 39
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,9 @@ def rewrite_location_coordinates(location: bytes, latitude: float, longitude: fl
         if field.number == 2 and field.wire_type == 0:
             output += encode_varint_field(2, coord_to_wire_int(longitude))
             longitude_rewritten = True
+            continue
+        if field.number == 3 and field.wire_type == 0:
+            output += encode_varint_field(3, DEFAULT_HORIZONTAL_ACCURACY)
             continue
         output += location[field.raw_start : field.raw_end]
 
