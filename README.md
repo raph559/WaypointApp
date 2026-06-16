@@ -17,12 +17,16 @@ For cellular use through Tailscale, see [docs/tailscale-cellular.md](docs/tailsc
 
 ## Building this yourself
 
+These build notes are legacy PacketTunnel-era context until the app-only controller build is completed in a later task. Current Waypoint usage is the VPS/Tailscale controller flow in [Usage](#usage).
+
 - Go to `./GoSpoofer/` and run `make.sh`
 - Open `./location-spoofer.xcodeproj/` with XCode
 - Select a paid developer account (Required. PacketTunnel is a paid API)
 - Run on iPhone?
 
 ## Building with Codemagic
+
+These workflows still reflect the older app-extension packaging path and are retained as legacy reference while the controller-only build is brought up.
 
 This fork includes `codemagic.yaml` with two workflows:
 
