@@ -1,3 +1,4 @@
+import gzip
 import unittest
 
 from tools.apple_wloc import (
@@ -28,6 +29,22 @@ class AppleWLocRewriteTests(unittest.TestCase):
         self.assertEqual([item["bssid"] for item in locations], ["aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"])
         self.assertEqual([round(item["latitude"], 6) for item in locations], [48.85837, 48.85837])
         self.assertEqual([round(item["longitude"], 6) for item in locations], [2.294481, 2.294481])
+
+    def test_rewrites_gzip_encoded_response_body(self):
+        body = self.build_response_body(
+            [
+                ("aa:bb:cc:dd:ee:ff", 50.12345678, 2.12345678),
+            ]
+        )
+        encoded = gzip.compress(body)
+
+        rewritten, rewritten_count = rewrite_wloc_response_body(encoded, 48.85837, 2.294481)
+
+        self.assertEqual(rewritten_count, 1)
+        self.assertTrue(rewritten.startswith(b"\x1f\x8b"))
+        locations = extract_wifi_locations_from_response_body(gzip.decompress(rewritten))
+        self.assertEqual(round(locations[0]["latitude"], 6), 48.85837)
+        self.assertEqual(round(locations[0]["longitude"], 6), 2.294481)
 
     def test_leaves_non_wloc_response_body_unchanged(self):
         original = b"not-a-wloc-response"
