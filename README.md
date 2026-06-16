@@ -78,20 +78,17 @@ Keep the allow-list narrow. Apps such as Snapchat and TikTok may pin their TLS c
 
 ## Usage
 
-1. Open app
-2. Go to "Location"
-3. Enter a GPS coordinate or choose a preset
-4. Go to VPN
-5. Install profile
-6. Connect to VPN
-7. Go to Safari
-8. Go to <http://mitm.it>
-9. Download profile
-10. Go to settings
-11. Enable profile
-12. Go to General > About > Certificate Trust Settings and enable Waypoint CA
-13. Turn off and on location services
-14. Go to maps and see it working
+Waypoint's active usage flow is the VPS/Tailscale controller path. Follow the VPS setup and pairing runbook in [docs/tailscale-cellular.md](docs/tailscale-cellular.md), then use the app as the map controller.
+
+1. Deploy the VPS services and start `waypoint-control.service` on the Tailscale address, for example `http://100.78.165.105:8765`.
+2. Pair the iPhone app with the VPS control API using `tools/waypoint_pair.py` as described in the runbook.
+3. Open Waypoint on the iPhone while connected to Tailscale.
+4. Choose the target coordinate on the map.
+5. Send the selected coordinate to the VPS control API.
+6. Validate the VPS target state with `cat /etc/waypoint/target.json`.
+7. Keep the VPS MITM path running while testing location updates on the phone.
+
+The old on-device PacketTunnel/VPN profile flow is retired for current Waypoint usage. Do not use the previous steps that installed a VPN profile, visited `mitm.it`, or trusted a local on-device CA as the active setup path.
 
 ## Some annoying notes encountered along the way
 
