@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import tempfile
+import threading
 from typing import Any
 
 
@@ -116,30 +117,38 @@ class TargetStore:
 
 
 class ClientRegistry:
+    _lock = threading.RLock()
+
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
     def add_client(self, client: WaypointClient) -> None:
-        clients = self.list_clients()
-        if any(existing.id == client.id for existing in clients):
-            raise ValueError(f"duplicate client id: {client.id}")
+        with self._lock:
+            clients = self._read_clients()
+            if any(existing.id == client.id for existing in clients):
+                raise ValueError(f"duplicate client id: {client.id}")
 
-        clients.append(client)
-        _write_json_atomic(
-            self.path,
-            {"clients": [_client_to_dict(existing) for existing in clients]},
-        )
+            clients.append(client)
+            _write_json_atomic(
+                self.path,
+                {"clients": [_client_to_dict(existing) for existing in clients]},
+            )
 
     def get_client(self, client_id: str) -> WaypointClient | None:
-        for client in self.list_clients():
-            if client.id == client_id:
-                return client
+        with self._lock:
+            for client in self._read_clients():
+                if client.id == client_id:
+                    return client
         return None
 
     def has_clients(self) -> bool:
         return bool(self.list_clients())
 
     def list_clients(self) -> list[WaypointClient]:
+        with self._lock:
+            return self._read_clients()
+
+    def _read_clients(self) -> list[WaypointClient]:
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
         except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError, OSError):
@@ -161,6 +170,8 @@ class ClientRegistry:
 
 
 class PairingSessionStore:
+    _consume_lock = threading.Lock()
+
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
@@ -196,20 +207,21 @@ class PairingSessionStore:
         }
 
     def consume_code(self, code: str, now: datetime | int | float | None = None) -> bool:
-        session = self.load_session()
-        if session is None or session["code"] != code:
-            return False
+        with self._consume_lock:
+            session = self.load_session()
+            if session is None or session["code"] != code:
+                return False
 
-        expires_at = _parse_datetime(session["expires_at"])
-        if expires_at is None:
-            return False
+            expires_at = _parse_datetime(session["expires_at"])
+            if expires_at is None:
+                return False
 
-        if _coerce_datetime(now) >= expires_at:
+            if _coerce_datetime(now) >= expires_at:
+                self._delete_session()
+                return False
+
             self._delete_session()
-            return False
-
-        self._delete_session()
-        return True
+            return True
 
     def _delete_session(self) -> None:
         try:

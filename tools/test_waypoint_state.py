@@ -1,5 +1,6 @@
 import json
 import tempfile
+import threading
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -103,6 +104,43 @@ class WaypointStateTests(unittest.TestCase):
                     )
                 )
 
+    def test_client_registry_rejects_concurrent_duplicate_client_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "clients.json"
+            registry = ClientRegistry(path)
+            started = threading.Barrier(40)
+            results: list[str] = []
+            results_lock = threading.Lock()
+
+            def add_duplicate(index: int) -> None:
+                client = WaypointClient(
+                    id="iphone171",
+                    name=f"Raph iPhone {index}",
+                    public_key=f"public-key-{index}",
+                    created_at="2026-06-16T12:00:00Z",
+                )
+                started.wait()
+                try:
+                    registry.add_client(client)
+                    result = "added"
+                except ValueError:
+                    result = "duplicate"
+                except Exception as exc:
+                    result = f"error:{type(exc).__name__}"
+                with results_lock:
+                    results.append(result)
+
+            threads = [threading.Thread(target=add_duplicate, args=(index,)) for index in range(40)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+            self.assertEqual(results.count("added"), 1)
+            self.assertEqual(results.count("duplicate"), 39)
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(len(data["clients"]), 1)
+
     def test_pairing_session_store_accepts_active_code_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "runtime" / "pairing.json"
@@ -121,6 +159,39 @@ class WaypointStateTests(unittest.TestCase):
             now = datetime(2026, 6, 16, 12, 0, tzinfo=timezone.utc)
             self.assertTrue(store.consume_code("7K4M9Q2XPA", now=now))
             self.assertFalse(store.consume_code("7K4M9Q2XPA", now=now))
+            self.assertIsNone(store.load_session())
+
+    def test_pairing_session_store_consumes_active_code_once_with_concurrent_threads(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pairing.json"
+            store = PairingSessionStore(path)
+            store.create_session(
+                "http://100.78.165.105:8765",
+                "7K4M9Q2XPA",
+                "2026-06-16T12:05:00Z",
+            )
+            now = datetime(2026, 6, 16, 12, 0, tzinfo=timezone.utc)
+            started = threading.Barrier(40)
+            results: list[bool] = []
+            results_lock = threading.Lock()
+
+            def consume() -> None:
+                started.wait()
+                try:
+                    result = store.consume_code("7K4M9Q2XPA", now=now)
+                except Exception:
+                    result = False
+                with results_lock:
+                    results.append(result)
+
+            threads = [threading.Thread(target=consume) for _ in range(40)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+            self.assertEqual(results.count(True), 1)
+            self.assertEqual(results.count(False), 39)
             self.assertIsNone(store.load_session())
 
     def test_pairing_session_store_rejects_expired_code(self):
