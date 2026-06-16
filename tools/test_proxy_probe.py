@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 from tools.apple_wloc import (
     WLOC_RESPONSE_PREFIX,
@@ -90,6 +92,27 @@ class MitmLocationProbeTests(unittest.TestCase):
                 "WAYPOINT_SPOOF_LON": "2.294481",
             },
         )
+        self.assertEqual(rewritten_count, 1)
+        [location] = extract_wifi_locations_from_response_body(rewritten)
+        self.assertEqual(round(location["latitude"], 6), 48.85837)
+        self.assertEqual(round(location["longitude"], 6), 2.294481)
+
+    def test_rewrites_wloc_response_from_target_file(self):
+        body = self.build_wloc_response_body("aa:bb:cc:dd:ee:ff", 50.1, 2.1)
+        with tempfile.TemporaryDirectory() as tmp:
+            target_file = Path(tmp) / "target.json"
+            target_file.write_text(
+                '{"latitude":48.85837,"longitude":2.294481,"label":"Eiffel Tower"}',
+                encoding="utf-8",
+            )
+
+            rewritten, rewritten_count = rewrite_wloc_response_if_configured(
+                "gs-loc.apple.com",
+                "/clls/wloc",
+                body,
+                {"WAYPOINT_TARGET_FILE": str(target_file)},
+            )
+
         self.assertEqual(rewritten_count, 1)
         [location] = extract_wifi_locations_from_response_body(rewritten)
         self.assertEqual(round(location["latitude"], 6), 48.85837)
