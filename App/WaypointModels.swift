@@ -85,6 +85,7 @@ enum WaypointAPIError: LocalizedError {
     case encodingFailed(Error)
     case decodingFailed(Error)
     case requestFailed(Error)
+    case serverRejected(message: String?)
     case invalidResponse
     case invalidStatus(code: Int, message: String?)
     case keychainStatus(OSStatus)
@@ -107,6 +108,11 @@ enum WaypointAPIError: LocalizedError {
             return "Failed to decode the Waypoint response: \(error.localizedDescription)"
         case .requestFailed(let error):
             return "The Waypoint request failed: \(error.localizedDescription)"
+        case .serverRejected(let message):
+            if let message, !message.isEmpty {
+                return "The Waypoint server rejected the request: \(message)"
+            }
+            return "The Waypoint server rejected the request."
         case .invalidResponse:
             return "The Waypoint server returned an invalid response."
         case .invalidStatus(let code, let message):
