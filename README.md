@@ -68,11 +68,13 @@ $env:WAYPOINT_SPOOF_ENABLED='1'
 $env:WAYPOINT_SPOOF_LAT='48.858370'
 $env:WAYPOINT_SPOOF_LON='2.294481'
 $mitm = Join-Path $env:APPDATA 'Python\Python314\Scripts\mitmdump.exe'
-$allow = '.*(gs-loc\.apple\.com|gs-loc-cn\.apple\.com|wps\.apple\.com|iphone-ld\.apple\.com|apple-mapkit\.com|gsp.*\.ls\.apple\.com|gspe.*\.ls\.apple\.com|gsp.*-ssl\.apple\.com).*'
-& $mitm --listen-host 0.0.0.0 --listen-port 8888 --set block_global=false --set flow_detail=0 --allow-hosts $allow -s tools\mitm_location_probe.py
+$allow = '^gs-loc(-cn)?\.apple\.com(:443)?$'
+& $mitm --listen-host 0.0.0.0 --listen-port 8888 --set block_global=false --set flow_detail=0 --set connection_strategy=lazy --allow-hosts $allow -s tools\mitm_location_probe.py
 ```
 
 Keep the iPhone Wi-Fi proxy pointed at the computer or VPS running the proxy. When spoofing triggers, the log prints `SPOOFED WLOC RESPONSE` with the number of Wi-Fi records rewritten.
+
+Keep the allow-list narrow. Apps such as Snapchat and TikTok may pin their TLS certificates; if mitmproxy tries to decrypt their traffic, they can stop loading. The command above tunnels non-Apple-location traffic without rewriting it.
 
 ## Usage
 
