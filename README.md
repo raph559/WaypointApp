@@ -31,6 +31,32 @@ This fork includes `codemagic.yaml` with two workflows:
 
 For SideStore, install the unsigned IPA and keep app extensions enabled when prompted. If the app opens but the VPN profile cannot install or connect, the likely blocker is the missing `packet-tunnel-provider` entitlement on the SideStore-signed app.
 
+## Free Wi-Fi proxy experiment
+
+The SideStore/free-signing path cannot install the Packet Tunnel VPN profile. Before paying for Apple signing, you can test a different route: check whether iOS sends Apple location lookup traffic through the manual Wi-Fi HTTP proxy setting.
+
+Run the probe on a laptop on the same Wi-Fi network as your iPhone:
+
+```bash
+python tools/proxy_probe.py --host 0.0.0.0 --port 8888
+```
+
+Find the laptop LAN IP, then on iPhone go to:
+
+`Settings > Wi-Fi > your network > Configure Proxy > Manual`
+
+Set:
+
+- Server: your laptop LAN IP
+- Port: `8888`
+- Authentication: Off
+
+Open Safari on the iPhone and visit any website to confirm traffic appears in the terminal. Then open Maps or another app that triggers a fresh location lookup.
+
+If the terminal logs a line containing `*** LOCATION CANDIDATE ***`, iOS is sending the location lookup through the proxy and a standalone MITM/rewrite proxy is worth building next. If you never see `gs-loc.apple.com`, this free route is probably blocked on your iOS/network setup.
+
+You can also run the probe on a VPS, but do not leave it exposed as a public open proxy. Restrict inbound traffic to your current public IP while testing.
+
 ## Usage
 
 1. Open app
