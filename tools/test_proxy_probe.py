@@ -12,6 +12,7 @@ from tools.mitm_location_probe import (
     is_location_candidate_host,
     rewrite_wloc_response_if_configured,
     should_dump_body,
+    spoof_coordinates_from_env,
 )
 from tools.proxy_probe import parse_proxy_target
 
@@ -141,12 +142,68 @@ class MitmLocationProbeTests(unittest.TestCase):
         self.assertEqual(round(location["latitude"], 6), 48.85837)
         self.assertEqual(round(location["longitude"], 6), 2.294481)
 
+    def test_spoof_coordinates_from_env_rejects_invalid_coordinates(self):
+        for latitude, longitude in (
+            ("nan", "2.294481"),
+            ("inf", "2.294481"),
+            ("91.0", "2.294481"),
+            ("48.85837", "181.0"),
+        ):
+            with self.subTest(latitude=latitude, longitude=longitude):
+                self.assertIsNone(
+                    spoof_coordinates_from_env(
+                        {
+                            "WAYPOINT_SPOOF_ENABLED": "1",
+                            "WAYPOINT_SPOOF_LAT": latitude,
+                            "WAYPOINT_SPOOF_LON": longitude,
+                        }
+                    )
+                )
+
+    def test_rewrites_wloc_response_from_env_when_target_file_is_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assert_rewrites_from_env_with_target_file(Path(tmp) / "target.json")
+
+    def test_rewrites_wloc_response_from_env_when_target_file_is_malformed_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target_file = Path(tmp) / "target.json"
+            target_file.write_text("{broken", encoding="utf-8")
+            self.assert_rewrites_from_env_with_target_file(target_file)
+
+    def test_rewrites_wloc_response_from_env_when_target_file_has_invalid_coordinates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target_file = Path(tmp) / "target.json"
+            target_file.write_text(
+                '{"latitude":91.0,"longitude":2.294481}',
+                encoding="utf-8",
+            )
+            self.assert_rewrites_from_env_with_target_file(target_file)
+
     def build_wloc_response_body(self, bssid, latitude, longitude):
         wifi_device = bytearray()
         wifi_device += encode_length_delimited_field(1, bssid.encode("ascii"))
         wifi_device += encode_length_delimited_field(2, encode_location(latitude, longitude))
         payload = encode_length_delimited_field(2, bytes(wifi_device))
         return WLOC_RESPONSE_PREFIX + len(payload).to_bytes(2, "big") + payload
+
+    def assert_rewrites_from_env_with_target_file(self, target_file):
+        body = self.build_wloc_response_body("aa:bb:cc:dd:ee:ff", 50.1, 2.1)
+        rewritten, rewritten_count = rewrite_wloc_response_if_configured(
+            "gs-loc.apple.com",
+            "/clls/wloc",
+            body,
+            {
+                "WAYPOINT_TARGET_FILE": str(target_file),
+                "WAYPOINT_SPOOF_ENABLED": "1",
+                "WAYPOINT_SPOOF_LAT": "48.85837",
+                "WAYPOINT_SPOOF_LON": "2.294481",
+            },
+        )
+
+        self.assertEqual(rewritten_count, 1)
+        [location] = extract_wifi_locations_from_response_body(rewritten)
+        self.assertEqual(round(location["latitude"], 6), 48.85837)
+        self.assertEqual(round(location["longitude"], 6), 2.294481)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,12 @@ class WaypointStateTests(unittest.TestCase):
         with self.assertRaises(CoordinateValidationError):
             validate_coordinates(48.0, 181.0)
 
+    def test_validate_coordinates_rejects_bool_values(self):
+        with self.assertRaises(CoordinateValidationError):
+            validate_coordinates(True, 2.0)
+        with self.assertRaises(CoordinateValidationError):
+            validate_coordinates(48.0, False)
+
     def test_target_store_writes_and_reads_target(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = TargetStore(Path(tmp) / "target.json")
