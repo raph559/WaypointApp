@@ -12,6 +12,7 @@ struct WaypointMapView: View {
     @State private var selectedLabel: String
     @State private var isApplying = false
     @State private var mapMessage: String?
+    @State private var mapMessageStyle: MapMessageStyle = .info
     @State private var showingSettings = false
     @FocusState private var searchFocused: Bool
 
@@ -210,7 +211,7 @@ struct WaypointMapView: View {
             if let mapMessage {
                 Text(mapMessage)
                     .font(.footnote)
-                    .foregroundStyle(status == .offline ? .red : .secondary)
+                    .foregroundStyle(mapMessageStyle.tint)
             }
 
             Button {
@@ -298,6 +299,7 @@ struct WaypointMapView: View {
                 searchFocused = false
             } catch {
                 mapMessage = error.localizedDescription
+                mapMessageStyle = .error
             }
         }
     }
@@ -306,6 +308,7 @@ struct WaypointMapView: View {
         selectedCoordinate = coordinate
         selectedLabel = label
         mapMessage = nil
+        mapMessageStyle = .info
 
         guard recenter else {
             return
@@ -329,6 +332,7 @@ struct WaypointMapView: View {
 
         isApplying = true
         mapMessage = nil
+        mapMessageStyle = .info
 
         let coordinate = WaypointCoordinate(
             latitude: selectedCoordinate.latitude,
@@ -339,8 +343,10 @@ struct WaypointMapView: View {
         do {
             try await client.setTarget(coordinate)
             mapMessage = "Location applied to the paired Waypoint server."
+            mapMessageStyle = .success
         } catch {
             mapMessage = error.localizedDescription
+            mapMessageStyle = .error
         }
 
         isApplying = false
@@ -382,6 +388,23 @@ private enum MapStatus {
             return .blue
         case .applied:
             return .green
+        }
+    }
+}
+
+private enum MapMessageStyle {
+    case info
+    case success
+    case error
+
+    var tint: Color {
+        switch self {
+        case .info:
+            return .secondary
+        case .success:
+            return .green
+        case .error:
+            return .red
         }
     }
 }

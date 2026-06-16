@@ -139,11 +139,13 @@ struct PairingView: View {
         isPairing = true
         errorMessage = nil
         successMessage = nil
+        let normalizedCode = pairingCodeText.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        pairingCodeText = normalizedCode
 
         do {
             try await client.pair(
                 serverURL: serverURL,
-                code: pairingCodeText.trimmingCharacters(in: .whitespacesAndNewlines),
+                code: normalizedCode,
                 clientName: clientNameText.trimmingCharacters(in: .whitespacesAndNewlines)
             )
             successMessage = "Pairing complete."

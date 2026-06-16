@@ -93,9 +93,12 @@ private struct QRCodeScannerRepresentable: UIViewControllerRepresentable {
 
 private final class QRCodeScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
     private let captureSession = AVCaptureSession()
+    private let sessionQueue = DispatchQueue(label: "com.raph559.waypoint.qr-session")
     private let previewLayer: AVCaptureVideoPreviewLayer
     private let onScan: (String) -> Void
     private var didScan = false
+    private var isSessionConfigured = false
+    private var isViewActive = false
 
     init(onScan: @escaping (String) -> Void) {
         self.onScan = onScan
@@ -115,6 +118,11 @@ private final class QRCodeScannerViewController: UIViewController, AVCaptureMeta
         configureSession()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        setViewActive(true)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         previewLayer.frame = view.bounds
@@ -122,9 +130,7 @@ private final class QRCodeScannerViewController: UIViewController, AVCaptureMeta
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if captureSession.isRunning {
-            captureSession.stopRunning()
-        }
+        setViewActive(false)
     }
 
     private func configurePreview() {
@@ -134,29 +140,72 @@ private final class QRCodeScannerViewController: UIViewController, AVCaptureMeta
     }
 
     private func configureSession() {
-        guard let videoDevice = AVCaptureDevice.default(for: .video) else {
-            return
-        }
-
-        do {
-            let videoInput = try AVCaptureDeviceInput(device: videoDevice)
-            if captureSession.canAddInput(videoInput) {
-                captureSession.addInput(videoInput)
+        sessionQueue.async { [weak self] in
+            guard let self, !self.isSessionConfigured else {
+                return
             }
 
-            let metadataOutput = AVCaptureMetadataOutput()
-            if captureSession.canAddOutput(metadataOutput) {
-                captureSession.addOutput(metadataOutput)
+            guard let videoDevice = AVCaptureDevice.default(for: .video) else {
+                return
+            }
+
+            self.captureSession.beginConfiguration()
+            defer {
+                self.captureSession.commitConfiguration()
+                if self.isSessionConfigured {
+                    self.startSessionIfNeeded()
+                }
+            }
+
+            do {
+                let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+                guard self.captureSession.canAddInput(videoInput) else {
+                    return
+                }
+                self.captureSession.addInput(videoInput)
+
+                let metadataOutput = AVCaptureMetadataOutput()
+                guard self.captureSession.canAddOutput(metadataOutput) else {
+                    return
+                }
+                self.captureSession.addOutput(metadataOutput)
                 metadataOutput.setMetadataObjectsDelegate(self, queue: .main)
                 metadataOutput.metadataObjectTypes = [.qr]
+
+                self.isSessionConfigured = true
+            } catch {
+                return
+            }
+        }
+    }
+
+    private func setViewActive(_ isActive: Bool) {
+        sessionQueue.async { [weak self] in
+            guard let self else {
+                return
             }
 
-            DispatchQueue.global(qos: .userInitiated).async { [captureSession] in
-                captureSession.startRunning()
+            self.isViewActive = isActive
+            if isActive {
+                self.startSessionIfNeeded()
+            } else {
+                self.stopSessionIfNeeded()
             }
-        } catch {
+        }
+    }
+
+    private func startSessionIfNeeded() {
+        guard isViewActive, isSessionConfigured, !captureSession.isRunning else {
             return
         }
+        captureSession.startRunning()
+    }
+
+    private func stopSessionIfNeeded() {
+        guard captureSession.isRunning else {
+            return
+        }
+        captureSession.stopRunning()
     }
 
     func metadataOutput(
@@ -174,7 +223,9 @@ private final class QRCodeScannerViewController: UIViewController, AVCaptureMeta
         }
 
         didScan = true
-        captureSession.stopRunning()
-        onScan(value)
+        setViewActive(false)
+        DispatchQueue.main.async { [onScan] in
+            onScan(value)
+        }
     }
 }
