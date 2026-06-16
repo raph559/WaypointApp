@@ -1,9 +1,9 @@
 # Waypoint
 
-Waypoint is a fork of `acheong08/ios-location-spoofer`, a standalone iOS app that attempts to spoof location without jailbreaks by using a local Packet Tunnel VPN extension.
+Waypoint is now a map-first iPhone controller for a VPS-hosted location spoofing engine. The app selects target coordinates and sends them over Tailscale to the VPS; spoofing happens on the server-side MITM path, not in an on-device Packet Tunnel VPN.
 
 > [!NOTE]
-> The original app was rejected from TestFlight. For best odds, install it directly on your own device. A free Apple ID may install the app through SideStore, but the Packet Tunnel entitlement may still prevent the VPN/spoofing part from working.
+> The original fork attempted on-device VPN spoofing and was rejected from TestFlight. Waypoint's current direction avoids relying on a local Packet Tunnel entitlement by moving spoofing to the VPS.
 
 https://github.com/user-attachments/assets/456d508c-2104-4d10-9458-e58e84b74788
 
@@ -11,9 +11,9 @@ https://github.com/user-attachments/assets/456d508c-2104-4d10-9458-e58e84b74788
 
 I did some research a few years back on how IOS location services worked: <https://github.com/acheong08/apple-corelocation-experiments>
 
-TL;DR: iPhone scans for WIFI access points, sends the list of access points to Apple, Apple tells device where those points are, iPhone triangulates. What you can do here is have a VPN that does a Man in the Middle attack and rewrite the response with different values for where the access points are. The device then thinks that is where it is.
+TL;DR: iPhone scans for WIFI access points, sends the list of access points to Apple, Apple tells device where those points are, iPhone triangulates. Waypoint's app is the map controller for the target coordinate, and the VPS/Tailscale spoofing engine runs the Man in the Middle path that rewrites the response with different values for where the access points are. The device then thinks that is where it is.
 
-> MITM and processing are all done on device. No network connections are made by the app. It is safe to use...
+For cellular use through Tailscale, see [docs/tailscale-cellular.md](docs/tailscale-cellular.md).
 
 ## Building this yourself
 
