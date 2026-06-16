@@ -117,6 +117,8 @@ class TargetStore:
 
 
 class ClientRegistry:
+    # V1 runs one Python API service process; this protects in-process registry updates.
+    # It is not a cross-process file lock.
     _lock = threading.RLock()
 
     def __init__(self, path: str | Path) -> None:
@@ -170,6 +172,8 @@ class ClientRegistry:
 
 
 class PairingSessionStore:
+    # V1 runs one Python API service process; this protects one-time consumes in-process.
+    # It is not a cross-process file lock.
     _consume_lock = threading.Lock()
 
     def __init__(self, path: str | Path) -> None:

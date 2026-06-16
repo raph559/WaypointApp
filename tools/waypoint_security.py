@@ -7,6 +7,7 @@ import binascii
 import hashlib
 import re
 import secrets
+import threading
 import time
 from collections.abc import Mapping
 from typing import Any
@@ -70,21 +71,23 @@ class NonceReplayCache:
     def __init__(self, window_seconds: int = 120) -> None:
         self.window_seconds = window_seconds
         self._seen: dict[tuple[str, str], float] = {}
+        self._lock = threading.Lock()
 
     def check_and_store(self, client_id: str, nonce: str, now: int | float) -> bool:
-        current = float(now)
-        cutoff = current - self.window_seconds
-        expired = [key for key, seen_at in self._seen.items() if seen_at < cutoff]
-        for key in expired:
-            del self._seen[key]
+        with self._lock:
+            current = float(now)
+            cutoff = current - self.window_seconds
+            expired = [key for key, seen_at in self._seen.items() if seen_at < cutoff]
+            for key in expired:
+                del self._seen[key]
 
-        key = (client_id, nonce)
-        seen_at = self._seen.get(key)
-        if seen_at is not None and seen_at >= cutoff:
-            return False
+            key = (client_id, nonce)
+            seen_at = self._seen.get(key)
+            if seen_at is not None and seen_at >= cutoff:
+                return False
 
-        self._seen[key] = current
-        return True
+            self._seen[key] = current
+            return True
 
 
 class SignedRequestVerifier:
@@ -106,6 +109,8 @@ class SignedRequestVerifier:
             timestamp_text = _required_header(headers, "X-Waypoint-Timestamp")
             nonce = _required_header(headers, "X-Waypoint-Nonce")
             signature_b64 = _required_header(headers, "X-Waypoint-Signature")
+            if not timestamp_text.isdigit():
+                return False
             timestamp = int(timestamp_text)
         except (KeyError, TypeError, ValueError):
             return False

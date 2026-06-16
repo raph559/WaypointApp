@@ -1,10 +1,12 @@
 import hashlib
+import threading
 import unittest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from tools.waypoint_security import (
+    NonceReplayCache,
     SignedRequestVerifier,
     b64url_decode,
     b64url_encode,
@@ -170,6 +172,14 @@ class WaypointSecurityTests(unittest.TestCase):
         self.assertFalse(
             verifier.verify(public_key_b64, METHOD, PATH, BODY, malformed_timestamp, now=TIMESTAMP)
         )
+        for timestamp_text in ("+1781607200", " 1781607200", "1781607200 "):
+            malformed_timestamp = dict(headers)
+            malformed_timestamp["X-Waypoint-Timestamp"] = timestamp_text
+            with self.subTest(timestamp=timestamp_text):
+                verifier = SignedRequestVerifier(allowed_skew_seconds=120)
+                self.assertFalse(
+                    verifier.verify(public_key_b64, METHOD, PATH, BODY, malformed_timestamp, now=TIMESTAMP)
+                )
 
         malformed_nonce = dict(headers)
         malformed_nonce["X-Waypoint-Nonce"] = "abc$"
@@ -189,6 +199,28 @@ class WaypointSecurityTests(unittest.TestCase):
             code = generate_pairing_code()
             self.assertEqual(len(code), 10)
             self.assertLessEqual(set(code), alphabet)
+
+    def test_nonce_replay_cache_allows_concurrent_same_nonce_once(self):
+        cache = NonceReplayCache(window_seconds=120)
+        cache._seen = _RacingSeen(parties=40)  # type: ignore[attr-defined]
+        started = threading.Barrier(40)
+        results: list[bool] = []
+        results_lock = threading.Lock()
+
+        def check_nonce() -> None:
+            started.wait()
+            result = cache.check_and_store("iphone171", "abc123nonce", TIMESTAMP)
+            with results_lock:
+                results.append(result)
+
+        threads = [threading.Thread(target=check_nonce) for _ in range(40)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(results.count(True), 1)
+        self.assertEqual(results.count(False), 39)
 
     def _signed_headers(
         self,
@@ -214,3 +246,18 @@ class WaypointSecurityTests(unittest.TestCase):
             format=PublicFormat.Raw,
         )
         return b64url_encode(public_key)
+
+
+class _RacingSeen(dict[tuple[str, str], float]):
+    def __init__(self, parties: int) -> None:
+        super().__init__()
+        self._barrier = threading.Barrier(parties)
+
+    def get(self, key: tuple[str, str], default: float | None = None) -> float | None:
+        value = super().get(key, default)
+        if key == ("iphone171", "abc123nonce") and value is None:
+            try:
+                self._barrier.wait(timeout=1)
+            except threading.BrokenBarrierError:
+                pass
+        return value
