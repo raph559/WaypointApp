@@ -35,6 +35,10 @@ pkg/
 vendor/
 go.work
 
+# Python
+__pycache__/
+*.py[cod]
+
 # GoSpoofer built artifacts
 GoSpoofer/build/
 GoSpoofer/*.a
