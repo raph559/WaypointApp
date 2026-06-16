@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import gzip
 
 
 WLOC_RESPONSE_PREFIX = b"\x00\x01\x00\x00\x00\x01\x00\x00"
@@ -23,6 +24,16 @@ class ProtoField:
 
 
 def rewrite_wloc_response_body(response_body: bytes, latitude: float, longitude: float) -> tuple[bytes, int]:
+    if response_body.startswith(b"\x1f\x8b"):
+        try:
+            decoded = gzip.decompress(response_body)
+        except OSError:
+            return response_body, 0
+        rewritten, rewrite_count = rewrite_wloc_response_body(decoded, latitude, longitude)
+        if rewrite_count == 0:
+            return response_body, 0
+        return gzip.compress(rewritten), rewrite_count
+
     if len(response_body) < len(WLOC_RESPONSE_PREFIX) + 2:
         return response_body, 0
     if not response_body.startswith(WLOC_RESPONSE_PREFIX):
