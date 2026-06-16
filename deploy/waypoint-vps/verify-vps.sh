@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+CONTROL_ENV_FILE="${WAYPOINT_CONTROL_ENV_FILE:-/etc/waypoint/waypoint-control.env}"
+
+_WAYPOINT_CONTROL_HOST_WAS_SET="${WAYPOINT_CONTROL_HOST+x}"
+_WAYPOINT_CONTROL_HOST_OVERRIDE="${WAYPOINT_CONTROL_HOST-}"
+_WAYPOINT_CONTROL_PORT_WAS_SET="${WAYPOINT_CONTROL_PORT+x}"
+_WAYPOINT_CONTROL_PORT_OVERRIDE="${WAYPOINT_CONTROL_PORT-}"
+
+if [[ -f "$CONTROL_ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  . "$CONTROL_ENV_FILE"
+fi
+
+if [[ -n "$_WAYPOINT_CONTROL_HOST_WAS_SET" ]]; then
+  WAYPOINT_CONTROL_HOST="$_WAYPOINT_CONTROL_HOST_OVERRIDE"
+fi
+
+if [[ -n "$_WAYPOINT_CONTROL_PORT_WAS_SET" ]]; then
+  WAYPOINT_CONTROL_PORT="$_WAYPOINT_CONTROL_PORT_OVERRIDE"
+fi
+
+CONTROL_HOST="${WAYPOINT_CONTROL_HOST:-100.78.165.105}"
+CONTROL_PORT="${WAYPOINT_CONTROL_PORT:-8765}"
+CONTROL_HEALTH_URL="${WAYPOINT_CONTROL_HEALTH_URL:-http://${CONTROL_HOST}:${CONTROL_PORT}/v1/health}"
+
 echo "== tailscaled =="
 systemctl is-active --quiet tailscaled
 systemctl status tailscaled --no-pager --lines=5
@@ -19,7 +43,7 @@ iptables -t nat -S | grep WAYPOINT_GSLOC
 
 echo
 echo "== control API health =="
-curl -s http://100.78.165.105:8765/v1/health || true
+curl -s "$CONTROL_HEALTH_URL" || true
 
 echo
 echo "== waypoint-control =="

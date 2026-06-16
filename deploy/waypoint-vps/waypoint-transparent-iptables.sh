@@ -1,10 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TAILSCALE_IF="tailscale0"
-MITM_PORT="8080"
-API_PORT="8765"
-CHAIN="WAYPOINT_GSLOC"
+CONTROL_ENV_FILE="${WAYPOINT_CONTROL_ENV_FILE:-/etc/waypoint/waypoint-control.env}"
+
+_WAYPOINT_CONTROL_PORT_WAS_SET="${WAYPOINT_CONTROL_PORT+x}"
+_WAYPOINT_CONTROL_PORT_OVERRIDE="${WAYPOINT_CONTROL_PORT-}"
+
+if [[ -f "$CONTROL_ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  . "$CONTROL_ENV_FILE"
+fi
+
+if [[ -n "$_WAYPOINT_CONTROL_PORT_WAS_SET" ]]; then
+  WAYPOINT_CONTROL_PORT="$_WAYPOINT_CONTROL_PORT_OVERRIDE"
+fi
+
+TAILSCALE_IF="${TAILSCALE_IF:-tailscale0}"
+MITM_PORT="${MITM_PORT:-8080}"
+API_PORT="${API_PORT:-${WAYPOINT_CONTROL_PORT:-8765}}"
+CHAIN="${CHAIN:-WAYPOINT_GSLOC}"
 
 if ! ip link show "$TAILSCALE_IF" >/dev/null 2>&1; then
   echo "Missing interface: $TAILSCALE_IF" >&2
