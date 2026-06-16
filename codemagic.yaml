@@ -1,0 +1,114 @@
+workflows:
+  sidestore-unsigned-ipa:
+    name: SideStore Unsigned IPA
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+      vars:
+        XCODE_PROJECT: location-spoofer.xcodeproj
+        XCODE_SCHEME: location-spoofer
+        APP_PRODUCT: location-spoofer.app
+        IPA_NAME: Waypoint-unsigned.ipa
+
+    scripts:
+      - name: Ensure Go is available
+        script: |
+          if ! command -v go >/dev/null 2>&1; then
+            brew update
+            brew install go
+          fi
+          go version
+
+      - name: Build Go location spoofer library
+        script: |
+          cd "$CM_BUILD_DIR/GoSpoofer"
+          chmod +x make.sh
+          ./make.sh
+
+      - name: Resolve Swift packages
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      - name: Build unsigned app bundle
+        script: |
+          rm -rf "$CM_BUILD_DIR/build"
+          xcodebuild build \
+            -project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$CM_BUILD_DIR/build/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Package unsigned IPA
+        script: |
+          APP_PATH="$CM_BUILD_DIR/build/DerivedData/Build/Products/Release-iphoneos/$APP_PRODUCT"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Expected app bundle not found: $APP_PATH"
+            find "$CM_BUILD_DIR/build/DerivedData/Build/Products" -maxdepth 3 -type d -name "*.app" -print
+            exit 1
+          fi
+
+          IPA_DIR="$CM_BUILD_DIR/build/ios/ipa"
+          PAYLOAD_DIR="$CM_BUILD_DIR/build/unsigned-ipa/Payload"
+          rm -rf "$CM_BUILD_DIR/build/unsigned-ipa" "$IPA_DIR"
+          mkdir -p "$PAYLOAD_DIR" "$IPA_DIR"
+          ditto "$APP_PATH" "$PAYLOAD_DIR/$(basename "$APP_PATH")"
+          cd "$CM_BUILD_DIR/build/unsigned-ipa"
+          /usr/bin/zip -qry "$IPA_DIR/$IPA_NAME" Payload
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+  signed-ad-hoc-ipa:
+    name: Signed Ad Hoc IPA
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.raph559.waypoint
+      vars:
+        XCODE_PROJECT: location-spoofer.xcodeproj
+        XCODE_SCHEME: location-spoofer
+
+    scripts:
+      - name: Ensure Go is available
+        script: |
+          if ! command -v go >/dev/null 2>&1; then
+            brew update
+            brew install go
+          fi
+          go version
+
+      - name: Build Go location spoofer library
+        script: |
+          cd "$CM_BUILD_DIR/GoSpoofer"
+          chmod +x make.sh
+          ./make.sh
+
+      - name: Configure Xcode code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
