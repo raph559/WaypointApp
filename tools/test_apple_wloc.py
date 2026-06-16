@@ -52,8 +52,8 @@ class AppleWLocRewriteTests(unittest.TestCase):
     def test_rewrites_auxiliary_field_22_locations_in_response_body(self):
         body = self.build_response_body([])
         payload = body[len(WLOC_RESPONSE_PREFIX) + 2 :]
-        payload += self.build_auxiliary_location_record(50.47384643, 2.980484)
-        payload += self.build_auxiliary_location_record(50.48288726, 2.97959327)
+        payload += self.build_auxiliary_location_record(50.47384643, 2.980484, horizontal_accuracy=1414)
+        payload += self.build_auxiliary_location_record(50.48288726, 2.97959327, horizontal_accuracy=149000)
         body = WLOC_RESPONSE_PREFIX + len(payload).to_bytes(2, "big") + payload
 
         rewritten, rewritten_count = rewrite_wloc_response_body(body, 48.85837, 2.294481)
@@ -62,6 +62,7 @@ class AppleWLocRewriteTests(unittest.TestCase):
         locations = self.extract_auxiliary_locations(rewritten)
         self.assertEqual([round(item["latitude"], 6) for item in locations], [48.85837, 48.85837])
         self.assertEqual([round(item["longitude"], 6) for item in locations], [2.294481, 2.294481])
+        self.assertEqual([item["horizontal_accuracy"] for item in locations], [39, 39])
 
     def test_leaves_non_wloc_response_body_unchanged(self):
         original = b"not-a-wloc-response"
@@ -80,13 +81,16 @@ class AppleWLocRewriteTests(unittest.TestCase):
             payload += encode_length_delimited_field(2, bytes(wifi_device))
         return WLOC_RESPONSE_PREFIX + len(payload).to_bytes(2, "big") + bytes(payload)
 
-    def build_auxiliary_location_record(self, latitude, longitude):
+    def build_auxiliary_location_record(self, latitude, longitude, horizontal_accuracy=39):
         record = bytearray()
         record += encode_varint_field(1, 2080)
         record += encode_varint_field(2, 2)
         record += encode_varint_field(3, 1411855360)
         record += encode_varint_field(4, 305)
-        record += encode_length_delimited_field(5, encode_location(latitude, longitude))
+        record += encode_length_delimited_field(
+            5,
+            encode_location(latitude, longitude, horizontal_accuracy=horizontal_accuracy),
+        )
         record += encode_varint_field(6, 18500)
         record += encode_varint_field(7, 1350)
         return encode_length_delimited_field(22, bytes(record))
