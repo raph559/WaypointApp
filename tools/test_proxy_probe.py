@@ -1,6 +1,16 @@
 import unittest
 
-from tools.mitm_location_probe import is_location_candidate_host, should_dump_body
+from tools.apple_wloc import (
+    WLOC_RESPONSE_PREFIX,
+    encode_length_delimited_field,
+    encode_location,
+    extract_wifi_locations_from_response_body,
+)
+from tools.mitm_location_probe import (
+    is_location_candidate_host,
+    rewrite_wloc_response_if_configured,
+    should_dump_body,
+)
 from tools.proxy_probe import parse_proxy_target
 
 
@@ -57,6 +67,40 @@ class MitmLocationProbeTests(unittest.TestCase):
         self.assertFalse(should_dump_body("gsp-ssl.ls.apple.com", "POST", "/dispatcher.arpc", 0))
         self.assertFalse(should_dump_body("gsp-ssl.ls.apple.com", "POST", "/dispatcher.arpc", 2_000_001))
         self.assertFalse(should_dump_body("gsp-ssl.ls.apple.com", "POST", "/unrelated", 100))
+
+    def test_rewrites_wloc_response_only_when_spoofing_is_configured(self):
+        body = self.build_wloc_response_body("aa:bb:cc:dd:ee:ff", 50.1, 2.1)
+
+        unchanged, unchanged_count = rewrite_wloc_response_if_configured(
+            "gs-loc.apple.com",
+            "/clls/wloc",
+            body,
+            {},
+        )
+        self.assertEqual(unchanged_count, 0)
+        self.assertEqual(unchanged, body)
+
+        rewritten, rewritten_count = rewrite_wloc_response_if_configured(
+            "gs-loc.apple.com",
+            "/clls/wloc",
+            body,
+            {
+                "WAYPOINT_SPOOF_ENABLED": "1",
+                "WAYPOINT_SPOOF_LAT": "48.85837",
+                "WAYPOINT_SPOOF_LON": "2.294481",
+            },
+        )
+        self.assertEqual(rewritten_count, 1)
+        [location] = extract_wifi_locations_from_response_body(rewritten)
+        self.assertEqual(round(location["latitude"], 6), 48.85837)
+        self.assertEqual(round(location["longitude"], 6), 2.294481)
+
+    def build_wloc_response_body(self, bssid, latitude, longitude):
+        wifi_device = bytearray()
+        wifi_device += encode_length_delimited_field(1, bssid.encode("ascii"))
+        wifi_device += encode_length_delimited_field(2, encode_location(latitude, longitude))
+        payload = encode_length_delimited_field(2, bytes(wifi_device))
+        return WLOC_RESPONSE_PREFIX + len(payload).to_bytes(2, "big") + payload
 
 
 if __name__ == "__main__":
