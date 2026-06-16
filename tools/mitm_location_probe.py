@@ -19,6 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.apple_wloc import rewrite_wloc_response_body
+from tools.waypoint_state import load_target_coordinates
 
 
 EXACT_LOCATION_HOSTS = {
@@ -39,6 +40,7 @@ MAX_DUMP_BYTES = 2_000_000
 SPOOF_ENABLED_ENV = "WAYPOINT_SPOOF_ENABLED"
 SPOOF_LAT_ENV = "WAYPOINT_SPOOF_LAT"
 SPOOF_LON_ENV = "WAYPOINT_SPOOF_LON"
+TARGET_FILE_ENV = "WAYPOINT_TARGET_FILE"
 
 
 def is_location_candidate_host(host: str) -> bool:
@@ -86,6 +88,12 @@ def rewrite_wloc_response_if_configured(
 
 
 def spoof_coordinates_from_env(environ: dict[str, str] | os._Environ[str]) -> tuple[float, float] | None:
+    target_file = environ.get(TARGET_FILE_ENV)
+    if target_file:
+        coordinates = load_target_coordinates(target_file)
+        if coordinates is not None:
+            return coordinates
+
     enabled = environ.get(SPOOF_ENABLED_ENV, "").strip().lower()
     if enabled not in {"1", "true", "yes", "on"}:
         return None
