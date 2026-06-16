@@ -42,3 +42,9 @@ class WaypointStateTests(unittest.TestCase):
             self.assertIsNone(load_target_coordinates(path))
             path.write_text("{broken", encoding="utf-8")
             self.assertIsNone(load_target_coordinates(path))
+
+    def test_load_target_coordinates_returns_none_for_invalid_utf8_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "target.json"
+            path.write_bytes(b"\xff\xfe\xfa")
+            self.assertIsNone(load_target_coordinates(path))

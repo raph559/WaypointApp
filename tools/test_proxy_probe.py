@@ -118,6 +118,29 @@ class MitmLocationProbeTests(unittest.TestCase):
         self.assertEqual(round(location["latitude"], 6), 48.85837)
         self.assertEqual(round(location["longitude"], 6), 2.294481)
 
+    def test_rewrites_wloc_response_from_env_when_target_file_is_invalid_utf8(self):
+        body = self.build_wloc_response_body("aa:bb:cc:dd:ee:ff", 50.1, 2.1)
+        with tempfile.TemporaryDirectory() as tmp:
+            target_file = Path(tmp) / "target.json"
+            target_file.write_bytes(b"\xff\xfe\xfa")
+
+            rewritten, rewritten_count = rewrite_wloc_response_if_configured(
+                "gs-loc.apple.com",
+                "/clls/wloc",
+                body,
+                {
+                    "WAYPOINT_TARGET_FILE": str(target_file),
+                    "WAYPOINT_SPOOF_ENABLED": "1",
+                    "WAYPOINT_SPOOF_LAT": "48.85837",
+                    "WAYPOINT_SPOOF_LON": "2.294481",
+                },
+            )
+
+        self.assertEqual(rewritten_count, 1)
+        [location] = extract_wifi_locations_from_response_body(rewritten)
+        self.assertEqual(round(location["latitude"], 6), 48.85837)
+        self.assertEqual(round(location["longitude"], 6), 2.294481)
+
     def build_wloc_response_body(self, bssid, latitude, longitude):
         wifi_device = bytearray()
         wifi_device += encode_length_delimited_field(1, bssid.encode("ascii"))
