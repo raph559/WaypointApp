@@ -22,6 +22,8 @@
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Waypoint uses the camera to scan the VPS pairing QR code.</string>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
