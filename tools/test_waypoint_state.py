@@ -1,11 +1,15 @@
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from tools.waypoint_state import (
+    ClientRegistry,
     CoordinateValidationError,
+    PairingSessionStore,
     TargetStore,
+    WaypointClient,
     load_target_coordinates,
     validate_coordinates,
 )
@@ -54,3 +58,82 @@ class WaypointStateTests(unittest.TestCase):
             path = Path(tmp) / "target.json"
             path.write_bytes(b"\xff\xfe\xfa")
             self.assertIsNone(load_target_coordinates(path))
+
+    def test_client_registry_adds_and_loads_client(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state" / "clients.json"
+            registry = ClientRegistry(path)
+            client = WaypointClient(
+                id="iphone171",
+                name="Raph iPhone",
+                public_key="base64url-ed25519-public-key",
+                created_at="2026-06-16T12:00:00Z",
+            )
+
+            registry.add_client(client)
+
+            self.assertTrue(path.exists())
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(data["clients"][0]["id"], "iphone171")
+
+            loaded_registry = ClientRegistry(path)
+            self.assertTrue(loaded_registry.has_clients())
+            self.assertEqual(loaded_registry.get_client("iphone171"), client)
+            self.assertEqual(loaded_registry.list_clients(), [client])
+
+    def test_client_registry_rejects_duplicate_client_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            registry = ClientRegistry(Path(tmp) / "clients.json")
+            registry.add_client(
+                WaypointClient(
+                    id="iphone171",
+                    name="Raph iPhone",
+                    public_key="base64url-ed25519-public-key",
+                    created_at="2026-06-16T12:00:00Z",
+                )
+            )
+
+            with self.assertRaises(ValueError):
+                registry.add_client(
+                    WaypointClient(
+                        id="iphone171",
+                        name="Duplicate iPhone",
+                        public_key="other-public-key",
+                        created_at="2026-06-16T12:01:00Z",
+                    )
+                )
+
+    def test_pairing_session_store_accepts_active_code_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "runtime" / "pairing.json"
+            store = PairingSessionStore(path)
+
+            store.create_session(
+                "http://100.78.165.105:8765",
+                "7K4M9Q2XPA",
+                "2026-06-16T12:05:00Z",
+            )
+
+            self.assertTrue(path.exists())
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(data["code"], "7K4M9Q2XPA")
+
+            now = datetime(2026, 6, 16, 12, 0, tzinfo=timezone.utc)
+            self.assertTrue(store.consume_code("7K4M9Q2XPA", now=now))
+            self.assertFalse(store.consume_code("7K4M9Q2XPA", now=now))
+            self.assertIsNone(store.load_session())
+
+    def test_pairing_session_store_rejects_expired_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pairing.json"
+            store = PairingSessionStore(path)
+
+            store.create_session(
+                "http://100.78.165.105:8765",
+                "7K4M9Q2XPA",
+                "2026-06-16T12:05:00Z",
+            )
+
+            self.assertTrue(path.exists())
+            now = datetime(2026, 6, 16, 12, 6, tzinfo=timezone.utc)
+            self.assertFalse(store.consume_code("7K4M9Q2XPA", now=now))
