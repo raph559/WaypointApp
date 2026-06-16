@@ -74,9 +74,60 @@ def rewrite_wloc_payload(payload: bytes, latitude: float, longitude: float) -> t
             output += encode_length_delimited_field(2, rewritten_device)
             rewrite_count += 1
             continue
+        if field.number == 22 and field.wire_type == 2:
+            auxiliary_record = payload[field.value_slice]
+            rewritten_record, record_rewritten = rewrite_auxiliary_location_record(
+                auxiliary_record,
+                latitude,
+                longitude,
+            )
+            if record_rewritten:
+                output += encode_length_delimited_field(22, rewritten_record)
+                rewrite_count += 1
+                continue
         output += payload[field.raw_start : field.raw_end]
 
     return bytes(output), rewrite_count
+
+
+def rewrite_auxiliary_location_record(record: bytes, latitude: float, longitude: float) -> tuple[bytes, bool]:
+    output = bytearray()
+    record_rewritten = False
+
+    for field in iter_proto_fields(record):
+        if field.number == 5 and field.wire_type == 2:
+            location = record[field.value_slice]
+            rewritten_location, location_rewritten = rewrite_location_coordinates(
+                location,
+                latitude,
+                longitude,
+            )
+            if location_rewritten:
+                output += encode_length_delimited_field(5, rewritten_location)
+                record_rewritten = True
+                continue
+        output += record[field.raw_start : field.raw_end]
+
+    return bytes(output), record_rewritten
+
+
+def rewrite_location_coordinates(location: bytes, latitude: float, longitude: float) -> tuple[bytes, bool]:
+    output = bytearray()
+    latitude_rewritten = False
+    longitude_rewritten = False
+
+    for field in iter_proto_fields(location):
+        if field.number == 1 and field.wire_type == 0:
+            output += encode_varint_field(1, coord_to_wire_int(latitude))
+            latitude_rewritten = True
+            continue
+        if field.number == 2 and field.wire_type == 0:
+            output += encode_varint_field(2, coord_to_wire_int(longitude))
+            longitude_rewritten = True
+            continue
+        output += location[field.raw_start : field.raw_end]
+
+    return bytes(output), latitude_rewritten and longitude_rewritten
 
 
 def rewrite_wifi_device(wifi_device: bytes, location: bytes) -> bytes:
