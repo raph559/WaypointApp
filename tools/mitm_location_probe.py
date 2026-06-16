@@ -19,7 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.apple_wloc import rewrite_wloc_response_body
-from tools.waypoint_state import load_target_coordinates
+from tools.waypoint_state import CoordinateValidationError, load_target_coordinates, validate_coordinates
 
 
 EXACT_LOCATION_HOSTS = {
@@ -98,8 +98,8 @@ def spoof_coordinates_from_env(environ: dict[str, str] | os._Environ[str]) -> tu
     if enabled not in {"1", "true", "yes", "on"}:
         return None
     try:
-        return float(environ[SPOOF_LAT_ENV]), float(environ[SPOOF_LON_ENV])
-    except (KeyError, ValueError):
+        return validate_coordinates(environ[SPOOF_LAT_ENV], environ[SPOOF_LON_ENV])
+    except (KeyError, CoordinateValidationError):
         return None
 
 

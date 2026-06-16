@@ -26,6 +26,9 @@ class WaypointTarget:
 
 
 def validate_coordinates(latitude: Any, longitude: Any) -> tuple[float, float]:
+    if isinstance(latitude, bool) or isinstance(longitude, bool):
+        raise CoordinateValidationError("latitude and longitude must be numeric")
+
     try:
         validated_latitude = float(latitude)
         validated_longitude = float(longitude)
