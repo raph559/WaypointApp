@@ -7,10 +7,13 @@ Run with:
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from pathlib import Path
 from urllib.parse import quote_plus
 
 from mitmproxy import http
+
+from tools.apple_wloc import rewrite_wloc_response_body
 
 
 EXACT_LOCATION_HOSTS = {
@@ -28,6 +31,9 @@ LOW_LEVEL_POST_DUMP_HOSTS = {
 }
 BODY_DUMP_DIR = Path("logs/mitm-bodies")
 MAX_DUMP_BYTES = 2_000_000
+SPOOF_ENABLED_ENV = "WAYPOINT_SPOOF_ENABLED"
+SPOOF_LAT_ENV = "WAYPOINT_SPOOF_LAT"
+SPOOF_LON_ENV = "WAYPOINT_SPOOF_LON"
 
 
 def is_location_candidate_host(host: str) -> bool:
@@ -53,6 +59,35 @@ def should_dump_body(host: str, method: str, path: str, body_len: int) -> bool:
     if host.lower().rstrip(".") in LOW_LEVEL_POST_DUMP_HOSTS:
         return True
     return path.startswith(("/dispatcher.arpc", "/clls/wloc", "/hvr/"))
+
+
+def rewrite_wloc_response_if_configured(
+    host: str,
+    path: str,
+    response_body: bytes,
+    environ: dict[str, str] | os._Environ[str] = os.environ,
+) -> tuple[bytes, int]:
+    if host.lower().rstrip(".") not in {"gs-loc.apple.com", "gs-loc-cn.apple.com"}:
+        return response_body, 0
+    if path != "/clls/wloc":
+        return response_body, 0
+
+    coordinates = spoof_coordinates_from_env(environ)
+    if coordinates is None:
+        return response_body, 0
+
+    latitude, longitude = coordinates
+    return rewrite_wloc_response_body(response_body, latitude, longitude)
+
+
+def spoof_coordinates_from_env(environ: dict[str, str] | os._Environ[str]) -> tuple[float, float] | None:
+    enabled = environ.get(SPOOF_ENABLED_ENV, "").strip().lower()
+    if enabled not in {"1", "true", "yes", "on"}:
+        return None
+    try:
+        return float(environ[SPOOF_LAT_ENV]), float(environ[SPOOF_LON_ENV])
+    except (KeyError, ValueError):
+        return None
 
 
 def request(flow: http.HTTPFlow) -> None:
@@ -111,6 +146,33 @@ def response(flow: http.HTTPFlow) -> None:
         flush=True,
     )
     dump_body("response", flow.request.method, host, flow.request.path, flow.response.raw_content or b"")
+    rewrite_wloc_flow_response(flow, host)
+
+
+def rewrite_wloc_flow_response(flow: http.HTTPFlow, host: str) -> None:
+    if flow.response is None:
+        return
+
+    response_body = flow.response.get_content(strict=False) or b""
+    rewritten, rewritten_count = rewrite_wloc_response_if_configured(
+        host,
+        flow.request.path,
+        response_body,
+    )
+    if rewritten_count == 0:
+        return
+
+    flow.response.set_content(rewritten)
+    coordinates = spoof_coordinates_from_env(os.environ)
+    target = "unknown"
+    if coordinates is not None:
+        target = f"{coordinates[0]:.6f},{coordinates[1]:.6f}"
+    print(
+        f"[{timestamp()}] SPOOFED WLOC RESPONSE "
+        f"https://{host}{flow.request.path} wifi_devices={rewritten_count} "
+        f"target={target}",
+        flush=True,
+    )
 
 
 def dump_body(kind: str, method: str, host: str, path: str, body: bytes) -> None:

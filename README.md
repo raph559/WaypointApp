@@ -57,6 +57,23 @@ If the terminal logs a line containing `*** LOCATION CANDIDATE ***`, iOS is send
 
 You can also run the probe on a VPS, but do not leave it exposed as a public open proxy. Restrict inbound traffic to your current public IP while testing.
 
+### Standalone MITM rewrite test
+
+After installing and trusting the mitmproxy CA on the iPhone, `tools/mitm_location_probe.py` can rewrite Apple Wi-Fi location responses from `gs-loc.apple.com/clls/wloc`.
+
+PowerShell example:
+
+```powershell
+$env:WAYPOINT_SPOOF_ENABLED='1'
+$env:WAYPOINT_SPOOF_LAT='48.858370'
+$env:WAYPOINT_SPOOF_LON='2.294481'
+$mitm = Join-Path $env:APPDATA 'Python\Python314\Scripts\mitmdump.exe'
+$allow = '.*(gs-loc\.apple\.com|gs-loc-cn\.apple\.com|wps\.apple\.com|iphone-ld\.apple\.com|apple-mapkit\.com|gsp.*\.ls\.apple\.com|gspe.*\.ls\.apple\.com|gsp.*-ssl\.apple\.com).*'
+& $mitm --listen-host 0.0.0.0 --listen-port 8888 --set block_global=false --set flow_detail=0 --allow-hosts $allow -s tools\mitm_location_probe.py
+```
+
+Keep the iPhone Wi-Fi proxy pointed at the computer or VPS running the proxy. When spoofing triggers, the log prints `SPOOFED WLOC RESPONSE` with the number of Wi-Fi records rewritten.
+
 ## Usage
 
 1. Open app
