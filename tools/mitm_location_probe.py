@@ -40,6 +40,8 @@ def is_location_candidate_host(host: str) -> bool:
         normalized.startswith("gsp") or normalized.startswith("gspe")
     ):
         return True
+    if normalized.startswith("gsp") and normalized.endswith("-ssl.apple.com"):
+        return True
     return False
 
 

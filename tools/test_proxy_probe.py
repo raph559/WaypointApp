@@ -31,6 +31,7 @@ class MitmLocationProbeTests(unittest.TestCase):
         self.assertTrue(is_location_candidate_host("gspe19-ssl.ls.apple.com"))
         self.assertTrue(is_location_candidate_host("gspe19-2-ssl.ls.apple.com"))
         self.assertTrue(is_location_candidate_host("gsp64-ssl.ls.apple.com"))
+        self.assertTrue(is_location_candidate_host("gsp10-ssl.apple.com"))
 
     def test_marks_mapkit_and_wps_hosts(self):
         self.assertTrue(is_location_candidate_host("cdn.apple-mapkit.com"))
