@@ -9,9 +9,14 @@ from __future__ import annotations
 from datetime import datetime
 import os
 from pathlib import Path
+import sys
 from urllib.parse import quote_plus
 
 from mitmproxy import http
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools.apple_wloc import rewrite_wloc_response_body
 
