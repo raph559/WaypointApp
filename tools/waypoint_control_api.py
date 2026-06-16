@@ -77,19 +77,22 @@ class WaypointControlService:
         if len(public_key_bytes) != 32:
             return _error(400, "invalid public_key")
 
-        if self.client_registry.get_client(client_id) is not None:
-            return _error(409, "client already paired")
         if not self.pairing_store.consume_code(code):
             return _error(403, "invalid or expired pairing code")
+        if self.client_registry.get_client(client_id) is not None:
+            return _error(409, "client already paired")
 
-        self.client_registry.add_client(
-            WaypointClient(
-                id=client_id,
-                name=client_name,
-                public_key=public_key,
-                created_at=_utc_now_text(),
+        try:
+            self.client_registry.add_client(
+                WaypointClient(
+                    id=client_id,
+                    name=client_name,
+                    public_key=public_key,
+                    created_at=_utc_now_text(),
+                )
             )
-        )
+        except ValueError:
+            return _error(409, "client already paired")
         return 200, {"ok": True, "client_id": client_id}
 
     def update_target(
@@ -115,11 +118,17 @@ class WaypointControlService:
         if error is not None:
             return _error(400, error)
 
+        label = None
+        if "label" in payload:
+            if not isinstance(payload["label"], str):
+                return _error(400, "label must be a string")
+            label = payload["label"]
+
         try:
             target = self.target_store.write_target(
                 payload.get("latitude"),
                 payload.get("longitude"),
-                label=_optional_text(payload.get("label")),
+                label=label,
                 updated_by=client_id,
             )
         except CoordinateValidationError as exc:
@@ -228,12 +237,6 @@ def _required_text(payload: dict[str, Any], key: str) -> str | None:
     if not isinstance(value, str) or value == "":
         return None
     return value
-
-
-def _optional_text(value: Any) -> str | None:
-    if value is None or isinstance(value, str):
-        return value
-    return None
 
 
 def _header(headers: Mapping[str, str], name: str) -> str | None:
