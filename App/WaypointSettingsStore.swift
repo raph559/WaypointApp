@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 
+@MainActor
 final class WaypointSettingsStore: ObservableObject {
     @Published var serverURL: String {
         didSet { userDefaults.set(serverURL, forKey: Keys.serverURL) }
