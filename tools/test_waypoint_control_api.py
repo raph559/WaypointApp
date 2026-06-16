@@ -1,3 +1,5 @@
+from http import HTTPStatus
+from io import BytesIO
 import json
 import tempfile
 import time
@@ -8,7 +10,7 @@ from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from tools.waypoint_control_api import WaypointControlService
+from tools.waypoint_control_api import WaypointControlService, WaypointRequestHandler
 from tools.waypoint_security import b64url_encode, canonical_request
 from tools.waypoint_state import (
     ClientRegistry,
@@ -76,6 +78,34 @@ class WaypointControlApiTests(unittest.TestCase):
             self.assertIsNone(state.client_registry.get_client(CLIENT_ID))
             self.assertIsNotNone(state.pairing_store.load_session())
 
+    def test_pair_rejects_invalid_code_for_existing_client_without_leaking_registration(self):
+        with self._state() as state:
+            service = state.service()
+            state.create_pairing_session()
+            state.client_registry.add_client(state.client())
+            body = state.pair_body(code="BADCODE123")
+
+            status, response = service.pair(body)
+
+            self.assertEqual(status, 403)
+            self.assertFalse(response["ok"])
+            self.assertIn("invalid or expired pairing code", response["error"])
+            self.assertIsNotNone(state.pairing_store.load_session())
+
+    def test_pair_duplicate_client_consumes_valid_code_after_validation(self):
+        with self._state() as state:
+            service = state.service()
+            state.create_pairing_session()
+            state.client_registry.add_client(state.client())
+            body = state.pair_body(code=PAIRING_CODE)
+
+            status, response = service.pair(body)
+
+            self.assertEqual(status, 409)
+            self.assertFalse(response["ok"])
+            self.assertIn("already paired", response["error"])
+            self.assertIsNone(state.pairing_store.load_session())
+
     def test_target_update_requires_known_client(self):
         with self._state() as state:
             service = state.service()
@@ -124,6 +154,20 @@ class WaypointControlApiTests(unittest.TestCase):
             self.assertIn("latitude", response["error"])
             self.assertIsNone(state.target_store.read_target())
 
+    def test_target_update_rejects_non_string_label(self):
+        with self._state() as state:
+            service = state.service()
+            state.client_registry.add_client(state.client())
+            body = state.target_body(48.85837, 2.294481, label=123)
+            headers = state.signed_headers(body)
+
+            status, response = service.update_target(body, headers)
+
+            self.assertEqual(status, 400)
+            self.assertFalse(response["ok"])
+            self.assertIn("label", response["error"])
+            self.assertIsNone(state.target_store.read_target())
+
     def test_target_update_rejects_replayed_nonce(self):
         with self._state() as state:
             service = state.service()
@@ -142,6 +186,55 @@ class WaypointControlApiTests(unittest.TestCase):
 
     def _state(self):
         return _TemporaryWaypointState()
+
+
+class WaypointRequestHandlerTests(unittest.TestCase):
+    def test_get_health_route_returns_service_health(self):
+        with self._state() as state:
+            state.target_store.write_target(48.85837, 2.294481, label="Eiffel Tower")
+            response = self._request(state.service(), "GET", "/v1/health")
+
+            self.assertEqual(response.status, HTTPStatus.OK)
+            self.assertTrue(response.json["ok"])
+            self.assertEqual(response.json["target"]["label"], "Eiffel Tower")
+
+    def test_post_pair_route_forwards_body(self):
+        with self._state() as state:
+            state.create_pairing_session()
+            body = state.pair_body(code=PAIRING_CODE)
+
+            response = self._request(state.service(), "POST", "/v1/pair", body=body)
+
+            self.assertEqual(response.status, HTTPStatus.OK)
+            self.assertEqual(response.json, {"ok": True, "client_id": CLIENT_ID})
+            self.assertIsNotNone(state.client_registry.get_client(CLIENT_ID))
+
+    def test_post_target_route_forwards_signed_headers(self):
+        with self._state() as state:
+            state.client_registry.add_client(state.client())
+            body = state.target_body(48.85837, 2.294481, label="Eiffel Tower")
+            headers = state.signed_headers(body)
+
+            response = self._request(state.service(), "POST", "/v1/target", body=body, headers=headers)
+
+            self.assertEqual(response.status, HTTPStatus.OK)
+            self.assertTrue(response.json["ok"])
+            self.assertEqual(response.json["target"]["updated_by"], CLIENT_ID)
+            stored = state.target_store.read_target()
+            self.assertEqual(stored.label, "Eiffel Tower")
+
+    def test_unknown_route_returns_404(self):
+        with self._state() as state:
+            response = self._request(state.service(), "GET", "/v1/missing")
+
+            self.assertEqual(response.status, HTTPStatus.NOT_FOUND)
+            self.assertFalse(response.json["ok"])
+
+    def _state(self):
+        return _TemporaryWaypointState()
+
+    def _request(self, service, method, path, *, body=b"", headers=None):
+        return _HandlerHarness(service).request(method, path, body=body, headers=headers or {})
 
 
 class _TemporaryWaypointState:
@@ -215,6 +308,58 @@ class _TemporaryWaypointState:
             format=PublicFormat.Raw,
         )
         return b64url_encode(public_key)
+
+
+class _HandlerHarness:
+    def __init__(self, service):
+        self.service = service
+
+    def request(self, method, path, *, body, headers):
+        request_bytes = self._request_bytes(method, path, body, headers)
+        socket = _FakeSocket(request_bytes)
+        original_service = WaypointRequestHandler.service
+        try:
+            WaypointRequestHandler.service = self.service
+            WaypointRequestHandler(socket, ("127.0.0.1", 1), object())
+        finally:
+            WaypointRequestHandler.service = original_service
+        return _HandlerResponse(socket.output.getvalue())
+
+    def _request_bytes(self, method, path, body, headers):
+        lines = [
+            f"{method} {path} HTTP/1.1",
+            "Host: waypoint.test",
+            f"Content-Length: {len(body)}",
+        ]
+        for name, value in headers.items():
+            lines.append(f"{name}: {value}")
+        header_bytes = ("\r\n".join(lines) + "\r\n\r\n").encode("ascii")
+        return header_bytes + body
+
+
+class _FakeSocket:
+    def __init__(self, request_bytes):
+        self.input = BytesIO(request_bytes)
+        self.output = BytesIO()
+
+    def makefile(self, mode, buffering=None):
+        if "r" in mode:
+            return self.input
+        if "w" in mode:
+            return self.output
+        raise ValueError(f"unsupported mode: {mode}")
+
+    def sendall(self, data):
+        self.output.write(data)
+
+
+class _HandlerResponse:
+    def __init__(self, response_bytes):
+        header_bytes, body = response_bytes.split(b"\r\n\r\n", 1)
+        status_line = header_bytes.splitlines()[0].decode("ascii")
+        self.status = int(status_line.split(" ", 2)[1])
+        self.body = body
+        self.json = json.loads(body.decode("utf-8"))
 
 
 if __name__ == "__main__":
