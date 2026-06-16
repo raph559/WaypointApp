@@ -109,10 +109,10 @@ struct SettingsView: View {
     private var manualCoordinateSection: some View {
         Section {
             TextField("Latitude", text: $latitudeText)
-                .keyboardType(.decimalPad)
+                .keyboardType(.numbersAndPunctuation)
 
             TextField("Longitude", text: $longitudeText)
-                .keyboardType(.decimalPad)
+                .keyboardType(.numbersAndPunctuation)
 
             TextField("Label", text: $labelText)
                 .textInputAutocapitalization(.words)
