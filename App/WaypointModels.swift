@@ -45,8 +45,6 @@ struct WaypointTargetRequest: Codable {
 
 struct WaypointHealthResponse: Codable {
     let ok: Bool
-    let paired: Bool
-    let target: WaypointCoordinate?
     let error: String?
 }
 

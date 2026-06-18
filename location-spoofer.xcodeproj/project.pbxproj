@@ -22,7 +22,6 @@
 		692ADCCFFE8F0BD9E04A5A75 /* WaypointMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E65E2095DD26526DA247FA /* WaypointMapView.swift */; };
 		732758DB91928068C61B3CD4 /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6ED6D3DF046D596D514FBC /* PairingView.swift */; };
 		84BD98C3C4B1CD653B5F1998 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A434E903E691E1D2443178 /* PacketTunnelProvider.swift */; };
-		8E13A724528DB7D3333AC84C /* location-spoofer-tunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D8D757F13BAAC8E71496C7AF /* location-spoofer-tunnel.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AEDDA85A6C993F0C8DA338F1 /* PlaceSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925B6E5443CE84FE2CC63B7 /* PlaceSearchViewModel.swift */; };
 		A4630568A5A8948065B9BE4A /* NIOPosix in Frameworks */ = {isa = PBXBuildFile; productRef = 740A872CAF7C917570E3FF24 /* NIOPosix */; };
 		B4A9CEFDA76DF0FF144AB8BF /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1CE6F820F010C81E230F6B58 /* AppIcon.icon */; };
@@ -31,30 +30,6 @@
 		D6161A240E7070DD28331FD2 /* location_spooferApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A149FA6A5DC44E8C88A1C2F /* location_spooferApp.swift */; };
 		F81CD0549A59B87876C274D7 /* LocationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DE17083883692D03165972E /* LocationConfiguration.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		9BCC5E4A7617041DF1D951DC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF37F0FEE9EBB6EA978A4FE2 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 05BE400C38853567CF92D63D;
-			remoteInfo = "location-spoofer-tunnel";
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		D77FC4BF33E944B750A49DD3 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				8E13A724528DB7D3333AC84C /* location-spoofer-tunnel.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		104A1AEBB47DC335637D19AD /* location-spoofer-tunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "location-spoofer-tunnel.entitlements"; sourceTree = "<group>"; };
@@ -217,12 +192,10 @@
 			buildPhases = (
 				80BB3E26989DAB7FD69DF190 /* Sources */,
 				39C85B1AF9627477263D7106 /* Resources */,
-				D77FC4BF33E944B750A49DD3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				DF7D7CD8E6BFD8F0707C861E /* PBXTargetDependency */,
 			);
 			name = "location-spoofer";
 			packageProductDependencies = (
@@ -317,21 +290,12 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		DF7D7CD8E6BFD8F0707C861E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 05BE400C38853567CF92D63D /* location-spoofer-tunnel */;
-			targetProxy = 9BCC5E4A7617041DF1D951DC /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin XCBuildConfiguration section */
 		45060551A7A36B0BE99CE58A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Resources/location-spoofer.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -443,7 +407,6 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Resources/location-spoofer.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

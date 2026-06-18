@@ -8,6 +8,9 @@ From the deployed checkout on the VPS:
 
 ```bash
 cd /opt/waypoint
+sudo apt-get update
+sudo apt-get install -y python3-venv
+sudo -u waypoint-mitm python3 -m venv /opt/waypoint/.venv
 sudo -u waypoint-mitm /opt/waypoint/.venv/bin/pip install mitmproxy cryptography qrcode
 ```
 

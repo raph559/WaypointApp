@@ -27,7 +27,7 @@ SERVER_URL = "http://100.78.165.105:8765"
 
 
 class WaypointControlApiTests(unittest.TestCase):
-    def test_health_reports_target_and_pairing_state(self):
+    def test_health_reports_liveness_without_target_state(self):
         with self._state() as state:
             service = state.service()
             state.target_store.write_target(
@@ -41,12 +41,7 @@ class WaypointControlApiTests(unittest.TestCase):
             status, response = service.health()
 
             self.assertEqual(status, 200)
-            self.assertTrue(response["ok"])
-            self.assertTrue(response["paired"])
-            self.assertEqual(response["target"]["latitude"], 48.85837)
-            self.assertEqual(response["target"]["longitude"], 2.294481)
-            self.assertEqual(response["target"]["label"], "Eiffel Tower")
-            self.assertEqual(response["target"]["updated_by"], CLIENT_ID)
+            self.assertEqual(response, {"ok": True})
 
     def test_pair_registers_client_with_active_code(self):
         with self._state() as state:
@@ -189,14 +184,13 @@ class WaypointControlApiTests(unittest.TestCase):
 
 
 class WaypointRequestHandlerTests(unittest.TestCase):
-    def test_get_health_route_returns_service_health(self):
+    def test_get_health_route_returns_liveness_without_target_state(self):
         with self._state() as state:
             state.target_store.write_target(48.85837, 2.294481, label="Eiffel Tower")
             response = self._request(state.service(), "GET", "/v1/health")
 
             self.assertEqual(response.status, HTTPStatus.OK)
-            self.assertTrue(response.json["ok"])
-            self.assertEqual(response.json["target"]["label"], "Eiffel Tower")
+            self.assertEqual(response.json, {"ok": True})
 
     def test_post_pair_route_forwards_body(self):
         with self._state() as state:
