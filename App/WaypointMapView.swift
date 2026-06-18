@@ -19,10 +19,13 @@ struct WaypointMapView: View {
     private let keychain: WaypointKeychain
     private let client: WaypointControlClient
 
-    init(
-        settings: WaypointSettingsStore = WaypointSettingsStore(),
-        keychain: WaypointKeychain = WaypointKeychain()
-    ) {
+    init() {
+        let settings = WaypointSettingsStore()
+        let keychain = WaypointKeychain()
+        self.init(settings: settings, keychain: keychain)
+    }
+
+    init(settings: WaypointSettingsStore, keychain: WaypointKeychain) {
         let initialCoordinate = CLLocationCoordinate2D(
             latitude: settings.lastLatitude ?? 48.8566,
             longitude: settings.lastLongitude ?? 2.3522
