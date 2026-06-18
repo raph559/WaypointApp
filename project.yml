@@ -37,15 +37,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.raph559.waypoint
         INFOPLIST_FILE: Resources/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Resources/location-spoofer.entitlements
         ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: "$(inherited)"
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/Frameworks"
-    dependencies:
-      - target: location-spoofer-tunnel
-        embed: true
-        codeSign: true
 
   location-spoofer-tunnel:
     type: app-extension
@@ -94,7 +89,6 @@ schemes:
     build:
       targets:
         location-spoofer: all
-        location-spoofer-tunnel: all
     run:
       config: Debug
     test:
@@ -110,7 +104,6 @@ schemes:
     build:
       targets:
         location-spoofer: all
-        location-spoofer-tunnel: all
     run:
       config: Debug
       commandLineArguments:

@@ -17,23 +17,24 @@ For cellular use through Tailscale, see [docs/tailscale-cellular.md](docs/tailsc
 
 ## Building this yourself
 
-These build notes are legacy PacketTunnel-era context until the app-only controller build is completed in a later task. Current Waypoint usage is the VPS/Tailscale controller flow in [Usage](#usage).
+Waypoint's SideStore app is a controller. It selects coordinates on the map and talks to the VPS control API over the official Tailscale app; the SideStore build does not install a VPN profile or package the old tunnel extension.
 
-- Go to `./GoSpoofer/` and run `make.sh`
-- Open `./location-spoofer.xcodeproj/` with XCode
-- Select a paid developer account (Required. PacketTunnel is a paid API)
-- Run on iPhone?
+1. Install XcodeGen if needed: `brew install xcodegen`.
+2. Generate the Xcode project: `xcodegen generate`.
+3. Open `./location-spoofer.xcodeproj/` with Xcode.
+4. Select the `location-spoofer` scheme.
+5. Build and run the app on iPhone.
+
+Before using the app, run the VPS setup first, connect the official Tailscale app to the same tailnet, pair Waypoint with the VPS by QR/code, then use the map to send target coordinates.
 
 ## Building with Codemagic
 
-These workflows still reflect the older app-extension packaging path and are retained as legacy reference while the controller-only build is brought up.
-
 This fork includes `codemagic.yaml` with two workflows:
 
-- `sidestore-unsigned-ipa`: builds an unsigned `Waypoint-unsigned.ipa` for SideStore to re-sign.
-- `signed-ad-hoc-ipa`: builds a signed ad hoc IPA if Codemagic has Apple profiles for `com.raph559.waypoint` and `com.raph559.waypoint.tunnel`.
+- `sidestore-unsigned-ipa`: generates the Xcode project with XcodeGen, builds the app-only controller, and packages an unsigned `Waypoint-unsigned.ipa` for SideStore to re-sign.
+- `signed-ad-hoc-ipa`: builds a signed ad hoc IPA if Codemagic has Apple profiles for the app bundle.
 
-For SideStore, install the unsigned IPA and keep app extensions enabled when prompted. If the app opens but the VPN profile cannot install or connect, the likely blocker is the missing `packet-tunnel-provider` entitlement on the SideStore-signed app.
+For SideStore, install the unsigned IPA as the controller app. Waypoint does not install a VPN profile; keep the official Tailscale app installed, signed in, and connected to the tailnet before opening Waypoint.
 
 ## Free Wi-Fi proxy experiment
 
@@ -82,15 +83,16 @@ Keep the allow-list narrow. Apps such as Snapchat and TikTok may pin their TLS c
 
 ## Usage
 
-Waypoint's active usage flow is the VPS/Tailscale controller path. Follow the VPS setup and pairing runbook in [docs/tailscale-cellular.md](docs/tailscale-cellular.md), then use the app as the map controller.
+Waypoint's active usage flow is the VPS/Tailscale controller path. Follow the VPS setup and pairing runbook in [docs/tailscale-cellular.md](docs/tailscale-cellular.md), then use the SideStore app as the map controller.
 
-1. Deploy the VPS services and start `waypoint-control.service` on the Tailscale address, for example `http://100.78.165.105:8765`.
-2. Pair the iPhone app with the VPS control API using `tools/waypoint_pair.py` as described in the runbook.
-3. Open Waypoint on the iPhone while connected to Tailscale.
-4. Choose the target coordinate on the map.
-5. Send the selected coordinate to the VPS control API.
-6. Validate the VPS target state with `cat /etc/waypoint/target.json`.
-7. Keep the VPS MITM path running while testing location updates on the phone.
+1. Run the VPS setup and start `waypoint-control.service` on the Tailscale address, for example `http://100.78.165.105:8765`.
+2. Install and connect the official Tailscale app on the iPhone to the same tailnet.
+3. Pair VPS: pair the iPhone app with the VPS control API using the QR code or pairing code from `tools/waypoint_pair.py` as described in the runbook.
+4. Open Waypoint from SideStore while Tailscale is connected.
+5. Choose the target coordinate on the map.
+6. Send the selected coordinate to the VPS control API.
+7. Validate the VPS target state with `cat /etc/waypoint/target.json`.
+8. Keep the VPS MITM path running while testing location updates on the phone.
 
 The old on-device PacketTunnel/VPN profile flow is retired for current Waypoint usage. Do not use the previous steps that installed a VPN profile, visited `mitm.it`, or trusted a local on-device CA as the active setup path.
 

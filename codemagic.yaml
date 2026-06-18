@@ -13,19 +13,13 @@ workflows:
         IPA_NAME: Waypoint-unsigned.ipa
 
     scripts:
-      - name: Ensure Go is available
+      - name: Generate Xcode project
         script: |
-          if ! command -v go >/dev/null 2>&1; then
-            brew update
-            brew install go
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
           fi
-          go version
-
-      - name: Build Go location spoofer library
-        script: |
-          cd "$CM_BUILD_DIR/GoSpoofer"
-          chmod +x make.sh
-          ./make.sh
+          cd "$CM_BUILD_DIR"
+          xcodegen generate
 
       - name: Resolve Swift packages
         script: |
