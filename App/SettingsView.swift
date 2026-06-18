@@ -66,9 +66,9 @@ struct SettingsView: View {
 
             if settings.isPaired {
                 Button(role: .destructive) {
-                    unpair()
+                    forgetPairing()
                 } label: {
-                    Label("Unpair Device", systemImage: "trash")
+                    Label("Forget Pairing", systemImage: "trash")
                 }
             }
         } header: {
@@ -157,16 +157,8 @@ struct SettingsView: View {
         healthMessage = nil
 
         do {
-            let response = try await client.health()
-            if let target = response.target {
-                healthMessage = String(
-                    format: "Server healthy. Current target: %.6f, %.6f",
-                    target.latitude,
-                    target.longitude
-                )
-            } else {
-                healthMessage = "Server healthy. No target is currently set."
-            }
+            _ = try await client.health()
+            healthMessage = "Server healthy."
         } catch {
             settingsError = error.localizedDescription
         }
@@ -174,7 +166,7 @@ struct SettingsView: View {
         isTestingConnection = false
     }
 
-    private func unpair() {
+    private func forgetPairing() {
         settingsError = nil
         healthMessage = nil
 
@@ -184,7 +176,7 @@ struct SettingsView: View {
             latitudeText = ""
             longitudeText = ""
             labelText = ""
-            healthMessage = "This device has been unpaired."
+            healthMessage = "Pairing forgotten on this device only."
         } catch {
             settingsError = error.localizedDescription
         }

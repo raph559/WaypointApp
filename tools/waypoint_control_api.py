@@ -54,8 +54,6 @@ class WaypointControlService:
     def health(self) -> tuple[int, dict[str, Any]]:
         return 200, {
             "ok": True,
-            "paired": self.client_registry.has_clients(),
-            "target": _target_to_dict(self.target_store.read_target()),
         }
 
     def pair(self, body: bytes) -> tuple[int, dict[str, Any]]:
