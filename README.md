@@ -32,7 +32,7 @@ Before using the app, run the VPS setup first, connect the official Tailscale ap
 This fork includes `codemagic.yaml` with two workflows:
 
 - `sidestore-unsigned-ipa`: generates the Xcode project with XcodeGen, builds the app-only controller, and packages an unsigned `Waypoint-unsigned.ipa` for SideStore to re-sign.
-- `signed-ad-hoc-ipa`: builds a signed ad hoc IPA if Codemagic has Apple profiles for the app bundle.
+- `signed-ad-hoc-ipa`: generates the Xcode project with XcodeGen, builds the signed app-only controller, and requires Apple signing profiles for the app bundle only.
 
 For SideStore, install the unsigned IPA as the controller app. Waypoint does not install a VPN profile; keep the official Tailscale app installed, signed in, and connected to the tailnet before opening Waypoint.
 
