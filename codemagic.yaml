@@ -1,102 +1,99 @@
 workflows:
-  sidestore-unsigned-ipa:
-    name: SideStore Unsigned IPA
-    max_build_duration: 120
+  waypoint-unsigned:
+    name: Waypoint unsigned IPA
     instance_type: mac_mini_m2
+    max_build_duration: 60
 
     environment:
-      xcode: latest
-      vars:
-        XCODE_PROJECT: location-spoofer.xcodeproj
-        XCODE_SCHEME: location-spoofer
-        APP_PRODUCT: location-spoofer.app
-        IPA_NAME: Waypoint-unsigned.ipa
+      xcode: 26.0
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "*"
+          include: true
+          source: true
+      cancel_previous_builds: true
 
     scripts:
+      - name: Install XcodeGen
+        script: |
+          set -euo pipefail
+
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+          fi
+
+          xcodegen --version
+          xcodebuild -version
+
+      - name: Fetch pinned idevice library
+        script: |
+          set -euo pipefail
+          bash scripts/fetch-idevice.sh
+
+      - name: Verify location simulation support
+        script: |
+          set -euo pipefail
+
+          symbols_file="${TMPDIR:-/tmp}/idevice-symbols.txt"
+          nm -g Vendor/idevice/libidevice_ffi.a > "$symbols_file"
+
+          grep -q '_location_simulation_new' "$symbols_file"
+          grep -q '_location_simulation_set' "$symbols_file"
+          grep -q '_location_simulation_clear' "$symbols_file"
+
       - name: Generate Xcode project
         script: |
-          if ! command -v xcodegen >/dev/null 2>&1; then
-            brew install xcodegen
-          fi
-          cd "$CM_BUILD_DIR"
-          xcodegen generate
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+          test -d Waypoint.xcodeproj
 
-      - name: Resolve Swift packages
+      - name: Archive without signing
         script: |
-          xcodebuild -resolvePackageDependencies \
-            -project "$CM_BUILD_DIR/$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME"
+          set -euo pipefail
 
-      - name: Build unsigned app bundle
-        script: |
           rm -rf "$CM_BUILD_DIR/build"
-          xcodebuild build \
-            -project "$CM_BUILD_DIR/$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
+          mkdir -p "$CM_BUILD_DIR/build"
+
+          set -o pipefail
+          xcodebuild clean archive \
+            -project Waypoint.xcodeproj \
+            -scheme Waypoint \
             -configuration Release \
+            -archivePath "$CM_BUILD_DIR/build/Waypoint.xcarchive" \
             -sdk iphoneos \
-            -derivedDataPath "$CM_BUILD_DIR/build/DerivedData" \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            EXPANDED_CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            ONLY_ACTIVE_ARCH=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            2>&1 | tee "$CM_BUILD_DIR/build/xcodebuild.log"
 
       - name: Package unsigned IPA
         script: |
-          APP_PATH="$CM_BUILD_DIR/build/DerivedData/Build/Products/Release-iphoneos/$APP_PRODUCT"
-          if [ ! -d "$APP_PATH" ]; then
-            echo "Expected app bundle not found: $APP_PATH"
-            find "$CM_BUILD_DIR/build/DerivedData/Build/Products" -maxdepth 3 -type d -name "*.app" -print
-            exit 1
-          fi
+          set -euo pipefail
 
-          IPA_DIR="$CM_BUILD_DIR/build/ios/ipa"
-          PAYLOAD_DIR="$CM_BUILD_DIR/build/unsigned-ipa/Payload"
-          rm -rf "$CM_BUILD_DIR/build/unsigned-ipa" "$IPA_DIR"
-          mkdir -p "$PAYLOAD_DIR" "$IPA_DIR"
-          ditto "$APP_PATH" "$PAYLOAD_DIR/$(basename "$APP_PATH")"
-          cd "$CM_BUILD_DIR/build/unsigned-ipa"
-          /usr/bin/zip -qry "$IPA_DIR/$IPA_NAME" Payload
+          app_path="$CM_BUILD_DIR/build/Waypoint.xcarchive/Products/Applications/Waypoint.app"
+          test -d "$app_path"
 
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
+          rm -rf "$CM_BUILD_DIR/Payload"
+          rm -f "$CM_BUILD_DIR/Waypoint-unsigned.ipa"
+          mkdir -p "$CM_BUILD_DIR/Payload"
 
-  signed-ad-hoc-ipa:
-    name: Signed Ad Hoc IPA
-    max_build_duration: 120
-    instance_type: mac_mini_m2
+          ditto "$app_path" "$CM_BUILD_DIR/Payload/Waypoint.app"
 
-    environment:
-      xcode: latest
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.raph559.waypoint
-      vars:
-        XCODE_PROJECT: location-spoofer.xcodeproj
-        XCODE_SCHEME: location-spoofer
-
-    scripts:
-      - name: Generate Xcode project
-        script: |
-          if ! command -v xcodegen >/dev/null 2>&1; then
-            brew install xcodegen
-          fi
           cd "$CM_BUILD_DIR"
-          xcodegen generate
+          ditto -c -k --sequesterRsrc --keepParent \
+            Payload \
+            Waypoint-unsigned.ipa
 
-      - name: Configure Xcode code signing
-        script: |
-          xcode-project use-profiles
-
-      - name: Build signed IPA
-        script: |
-          xcode-project build-ipa \
-            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          test -s Waypoint-unsigned.ipa
+          shasum -a 256 Waypoint-unsigned.ipa
 
     artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
+      - Waypoint-unsigned.ipa
+      - build/xcodebuild.log
