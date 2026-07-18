@@ -22,9 +22,9 @@ targets:
         excludes:
           - Info.plist
           - Waypoint.entitlements
+          - Assets.xcassets
     settings:
       base:
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: Waypoint/Waypoint.entitlements
         CURRENT_PROJECT_VERSION: 2
