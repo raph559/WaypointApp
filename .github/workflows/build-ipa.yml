@@ -31,10 +31,9 @@ jobs:
 
       - name: Verify location-simulation symbols
         run: |
-          nm -g Vendor/idevice/libidevice_ffi.a > "$RUNNER_TEMP/idevice-symbols.txt"
-          grep -q '_location_simulation_new' "$RUNNER_TEMP/idevice-symbols.txt"
-          grep -q '_location_simulation_set' "$RUNNER_TEMP/idevice-symbols.txt"
-          grep -q '_location_simulation_clear' "$RUNNER_TEMP/idevice-symbols.txt"
+          LC_ALL=C grep -a -q '_location_simulation_new' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_set' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_clear' Vendor/idevice/libidevice_ffi.a
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -55,6 +54,8 @@ jobs:
 
       - name: Package IPA
         run: |
+          test -d build/Waypoint.xcarchive/Products/Applications/Waypoint.app
+          rm -rf Payload
           mkdir -p Payload
           ditto build/Waypoint.xcarchive/Products/Applications/Waypoint.app Payload/Waypoint.app
           ditto -c -k --sequesterRsrc --keepParent Payload Waypoint-unsigned.ipa

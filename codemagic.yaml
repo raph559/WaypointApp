@@ -36,13 +36,9 @@ workflows:
       - name: Verify location simulation support
         script: |
           set -euo pipefail
-
-          symbols_file="${TMPDIR:-/tmp}/idevice-symbols.txt"
-          nm -g Vendor/idevice/libidevice_ffi.a > "$symbols_file"
-
-          grep -q '_location_simulation_new' "$symbols_file"
-          grep -q '_location_simulation_set' "$symbols_file"
-          grep -q '_location_simulation_clear' "$symbols_file"
+          LC_ALL=C grep -a -q '_location_simulation_new' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_set' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_clear' Vendor/idevice/libidevice_ffi.a
 
       - name: Generate Xcode project
         script: |
