@@ -67,7 +67,7 @@ final class SimulationNotificationMonitor {
             }
 
             let obsoleteIDs = pendingWatchdogIDs.filter { $0 != requestID }
-            center.removePendingNotificationRequests(withIdentifiers: obsoleteIDs)
+            center.removePendingNotificationRequests(withIdentifiers: Array(obsoleteIDs))
             pendingWatchdogIDs = [requestID]
         }
     }

@@ -34,6 +34,21 @@ struct MapSpoofView: View {
     }
 
     var body: some View {
+        searchAwareContent
+            .onChange(of: selection) { _, coordinate in
+                Self.store(coordinate)
+            }
+            .onChange(of: model.simulationEvent) { _, event in
+                show(event)
+            }
+            .onDisappear {
+                searchTask?.cancel()
+                eventDismissTask?.cancel()
+                placeSearch.cancelAll()
+            }
+    }
+
+    private var baseContent: some View {
         ZStack(alignment: .top) {
             map
                 .ignoresSafeArea(edges: .bottom)
@@ -68,6 +83,10 @@ struct MapSpoofView: View {
                 .accessibilityLabel("Device setup")
             }
         }
+    }
+
+    private var searchAwareContent: some View {
+        baseContent
         .searchable(
             text: $searchText,
             isPresented: $isSearchPresented,
@@ -96,17 +115,6 @@ struct MapSpoofView: View {
             } else {
                 placeSearch.clearSuggestions()
             }
-        }
-        .onChange(of: selection) { _, coordinate in
-            Self.store(coordinate)
-        }
-        .onChange(of: model.simulationEvent) { _, event in
-            show(event)
-        }
-        .onDisappear {
-            searchTask?.cancel()
-            eventDismissTask?.cancel()
-            placeSearch.cancelAll()
         }
     }
 
