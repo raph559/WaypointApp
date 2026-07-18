@@ -11,6 +11,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var preparationMessage = ""
     @Published private(set) var simulatedCoordinate: SelectedCoordinate?
     @Published private(set) var isChangingSimulation = false
+    @Published private(set) var simulationEvent: SimulationEvent?
     @Published var alert: AppAlert?
     @Published var isSetupPresented = false
     @Published var backgroundKeepAliveEnabled: Bool {
@@ -29,7 +30,10 @@ final class AppModel: ObservableObject {
     }
 
     private let bridge = DeviceBridge()
+    private let feedbackGenerator = UINotificationFeedbackGenerator()
     private var resendTask: Task<Void, Never>?
+    private var simulationSessionID: UUID?
+    private var isStoppingSimulation = false
     private static let keepAliveKey = "backgroundKeepAliveEnabled"
     private static let pairingCallbackScheme = "waypoint-pairing-c7f2e8b4"
 
@@ -46,6 +50,15 @@ final class AppModel: ObservableObject {
 
     func refreshLocalState() {
         pairingState = PairingFileStore.exists ? .ready : .required
+
+        if SimulationNotificationMonitor.shared.consumeStaleSessionMarker() {
+            publishSimulationEvent(.connectionLost)
+            presentError(
+                title: "Previous Spoof Session Ended",
+                message: "Waypoint was closed while spoofing. The developer connection is no longer being maintained, so verify your location before continuing."
+            )
+        }
+
         if !PairingFileStore.exists {
             tunnelState = .required
             developerImageState = .required
@@ -82,6 +95,11 @@ final class AppModel: ObservableObject {
             return
         }
 
+        guard simulatedCoordinate == nil else {
+            presentError(title: "Stop Spoofing First", message: "Stop the active spoof before replacing the pairing file.")
+            return
+        }
+
         Task {
             await bridge.disconnect()
             do {
@@ -95,6 +113,11 @@ final class AppModel: ObservableObject {
     }
 
     func importPairingFile(_ result: Result<[URL], Error>) {
+        guard simulatedCoordinate == nil else {
+            presentError(title: "Stop Spoofing First", message: "Stop the active spoof before replacing the pairing file.")
+            return
+        }
+
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
@@ -119,6 +142,10 @@ final class AppModel: ObservableObject {
 
     func prepareDevice() async {
         guard !isPreparing else { return }
+        guard simulatedCoordinate == nil else {
+            presentError(title: "Spoof Is Active", message: "Stop spoofing before reconnecting or preparing the device.")
+            return
+        }
         guard PairingFileStore.exists else {
             pairingState = .required
             presentError(
@@ -190,11 +217,29 @@ final class AppModel: ObservableObject {
             return
         }
 
+        guard !isChangingSimulation else { return }
+
+        let previousCoordinate = simulatedCoordinate
+        let previousSessionID = simulationSessionID
+
         isChangingSimulation = true
+        resendTask?.cancel()
+        resendTask = nil
+        simulationSessionID = nil
+
         do {
             try await bridge.setLocation(coordinate)
+
+            if let previousSessionID {
+                SimulationNotificationMonitor.shared.endSession(previousSessionID)
+            }
+
+            let sessionID = UUID()
+            simulationSessionID = sessionID
             simulatedCoordinate = coordinate
             UIApplication.shared.isIdleTimerDisabled = true
+            SimulationNotificationMonitor.shared.beginSession(sessionID)
+
             if backgroundKeepAliveEnabled {
                 do {
                     try BackgroundKeepAlive.shared.start()
@@ -205,23 +250,43 @@ final class AppModel: ObservableObject {
                     )
                 }
             }
-            beginResendLoop()
+            beginResendLoop(for: sessionID)
+            publishSimulationEvent(previousCoordinate == nil ? .started : .moved, coordinate: coordinate)
         } catch {
-            invalidateConnectionReadiness()
-            isSetupPresented = true
-            presentError(title: "Location Simulation Failed", error: error)
+            if previousCoordinate != nil, let previousSessionID {
+                simulationConnectionFailed(
+                    error,
+                    notificationSessionID: previousSessionID,
+                    requireCurrentSession: false
+                )
+            } else {
+                invalidateConnectionReadiness()
+                isSetupPresented = true
+                presentError(title: "Location Simulation Failed", error: error)
+            }
         }
         isChangingSimulation = false
     }
 
     func stopSimulation() async {
         guard !isChangingSimulation else { return }
+
+        let sessionID = simulationSessionID
         isChangingSimulation = true
+        isStoppingSimulation = true
+        simulationSessionID = nil
         resendTask?.cancel()
         resendTask = nil
 
+        if let sessionID {
+            SimulationNotificationMonitor.shared.endSession(sessionID)
+        }
+
+        var didConfirmStop = false
+
         do {
             try await bridge.clearLocation()
+            didConfirmStop = true
         } catch {
             invalidateConnectionReadiness()
             presentError(
@@ -233,16 +298,25 @@ final class AppModel: ObservableObject {
         simulatedCoordinate = nil
         BackgroundKeepAlive.shared.stop()
         UIApplication.shared.isIdleTimerDisabled = false
+        if didConfirmStop {
+            publishSimulationEvent(.stopped)
+        }
+        isStoppingSimulation = false
         isChangingSimulation = false
     }
 
     func applicationBecameActive() {
-        guard let coordinate = simulatedCoordinate else { return }
+        guard let coordinate = simulatedCoordinate,
+              let sessionID = simulationSessionID else { return }
+
         Task {
             do {
                 try await bridge.setLocation(coordinate)
+                guard simulationSessionID == sessionID else { return }
+                SimulationNotificationMonitor.shared.recordHeartbeat(for: sessionID)
             } catch {
-                simulationConnectionFailed(error)
+                guard simulationSessionID == sessionID else { return }
+                simulationConnectionFailed(error, notificationSessionID: sessionID)
             }
         }
     }
@@ -273,35 +347,49 @@ final class AppModel: ObservableObject {
         preparationMessage = "Pairing file imported"
     }
 
-    private func beginResendLoop() {
+    private func beginResendLoop(for sessionID: UUID) {
         resendTask?.cancel()
         resendTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(4))
                 guard !Task.isCancelled,
                       let self,
+                      self.simulationSessionID == sessionID,
                       let coordinate = self.simulatedCoordinate else {
                     return
                 }
 
                 do {
                     try await self.bridge.setLocation(coordinate)
+                    guard !Task.isCancelled, self.simulationSessionID == sessionID else { return }
+                    SimulationNotificationMonitor.shared.recordHeartbeat(for: sessionID)
                 } catch {
-                    self.simulationConnectionFailed(error)
+                    guard !Task.isCancelled, self.simulationSessionID == sessionID else { return }
+                    self.simulationConnectionFailed(error, notificationSessionID: sessionID)
                     return
                 }
             }
         }
     }
 
-    private func simulationConnectionFailed(_ error: Error) {
+    private func simulationConnectionFailed(
+        _ error: Error,
+        notificationSessionID: UUID,
+        requireCurrentSession: Bool = true
+    ) {
+        if requireCurrentSession, simulationSessionID != notificationSessionID { return }
+        guard !isStoppingSimulation, simulatedCoordinate != nil else { return }
+
         resendTask?.cancel()
         resendTask = nil
+        simulationSessionID = nil
         simulatedCoordinate = nil
         BackgroundKeepAlive.shared.stop()
         UIApplication.shared.isIdleTimerDisabled = false
+        SimulationNotificationMonitor.shared.reportUnexpectedStop(for: notificationSessionID)
         invalidateConnectionReadiness()
         isSetupPresented = true
+        publishSimulationEvent(.connectionLost)
         presentError(
             title: "Simulation Connection Ended",
             message: "The developer connection closed, so iOS may have returned to the real location.\n\n\(error.localizedDescription)"
@@ -314,6 +402,18 @@ final class AppModel: ObservableObject {
 
     private func presentError(title: String, message: String) {
         alert = AppAlert(title: title, message: message)
+    }
+
+    private func publishSimulationEvent(
+        _ kind: SimulationEventKind,
+        coordinate: SelectedCoordinate? = nil
+    ) {
+        let event = SimulationEvent(kind: kind, coordinate: coordinate)
+        simulationEvent = event
+
+        feedbackGenerator.prepare()
+        feedbackGenerator.notificationOccurred(kind == .connectionLost ? .error : .success)
+        UIAccessibility.post(notification: .announcement, argument: event.accessibilityAnnouncement)
     }
 
     private func invalidateConnectionReadiness() {

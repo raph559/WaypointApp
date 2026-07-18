@@ -1,29 +1,36 @@
 import MapKit
 import SwiftUI
 
+@MainActor
 struct MapSpoofView: View {
     @EnvironmentObject private var model: AppModel
 
+    @StateObject private var placeSearch = PlaceSearchController()
     @State private var selection: SelectedCoordinate
     @State private var cameraPosition: MapCameraPosition
+    @State private var visibleRegion: MKCoordinateRegion
     @State private var searchText = ""
     @State private var isSearching = false
+    @State private var isSearchPresented = false
+    @State private var searchTask: Task<Void, Never>?
+    @State private var searchOperationID: UUID?
+    @State private var displayedEvent: SimulationEvent?
+    @State private var eventDismissTask: Task<Void, Never>?
 
     private static let storedCoordinateKey = "selectedCoordinate"
     private static let defaultCoordinate = SelectedCoordinate(latitude: 48.8566, longitude: 2.3522)
 
     init() {
         let initial = Self.loadStoredCoordinate() ?? Self.defaultCoordinate
-        _selection = State(initialValue: initial)
-        _cameraPosition = State(
-            initialValue: .region(
-                MKCoordinateRegion(
-                    center: initial.coreLocationCoordinate,
-                    latitudinalMeters: 6_000,
-                    longitudinalMeters: 6_000
-                )
-            )
+        let region = MKCoordinateRegion(
+            center: initial.coreLocationCoordinate,
+            latitudinalMeters: 6_000,
+            longitudinalMeters: 6_000
         )
+
+        _selection = State(initialValue: initial)
+        _cameraPosition = State(initialValue: .region(region))
+        _visibleRegion = State(initialValue: region)
     }
 
     var body: some View {
@@ -31,11 +38,19 @@ struct MapSpoofView: View {
             map
                 .ignoresSafeArea(edges: .bottom)
 
-            if let active = model.simulatedCoordinate {
-                activeBanner(active)
-                    .padding(.top, 8)
-                    .padding(.horizontal)
+            VStack(spacing: 9) {
+                if let event = displayedEvent {
+                    eventBanner(event)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                if let active = model.simulatedCoordinate {
+                    activeBanner(active)
+                        .transition(.opacity)
+                }
             }
+            .padding(.top, 8)
+            .padding(.horizontal)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             controls
@@ -53,12 +68,92 @@ struct MapSpoofView: View {
                 .accessibilityLabel("Device setup")
             }
         }
-        .searchable(text: $searchText, prompt: "Search a place or address")
+        .searchable(
+            text: $searchText,
+            isPresented: $isSearchPresented,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search a place or address"
+        ) {
+            searchSuggestions
+        }
         .onSubmit(of: .search) {
-            Task { await search() }
+            searchSubmittedText()
+        }
+        .onChange(of: searchText) { _, query in
+            guard isSearchPresented else { return }
+
+            if isSearching {
+                searchTask?.cancel()
+                placeSearch.cancelAll()
+                searchOperationID = nil
+                isSearching = false
+            }
+            placeSearch.update(query: query, region: visibleRegion)
+        }
+        .onChange(of: isSearchPresented) { _, presented in
+            if presented {
+                placeSearch.update(query: searchText, region: visibleRegion)
+            } else {
+                placeSearch.clearSuggestions()
+            }
         }
         .onChange(of: selection) { _, coordinate in
             Self.store(coordinate)
+        }
+        .onChange(of: model.simulationEvent) { _, event in
+            show(event)
+        }
+        .onDisappear {
+            searchTask?.cancel()
+            eventDismissTask?.cancel()
+            placeSearch.cancelAll()
+        }
+    }
+
+    private var searchSuggestions: some View {
+        Group {
+            if placeSearch.isCompleting && placeSearch.suggestions.isEmpty {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Finding places…")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            ForEach(placeSearch.suggestions) { suggestion in
+                Button {
+                    selectSuggestion(suggestion)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .foregroundStyle(.red)
+                            .frame(width: 24)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(suggestion.title)
+                                .foregroundStyle(.primary)
+
+                            if !suggestion.subtitle.isEmpty {
+                                Text(suggestion.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
+            if placeSearch.completionFailed,
+               !searchText.isEmpty,
+               placeSearch.suggestions.isEmpty {
+                Label("Suggestions temporarily unavailable", systemImage: "wifi.exclamationmark")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -85,6 +180,10 @@ struct MapSpoofView: View {
             .onTapGesture { point in
                 guard let coordinate = proxy.convert(point, from: .local) else { return }
                 select(coordinate)
+            }
+            .onMapCameraChange(frequency: .onEnd) { context in
+                visibleRegion = context.region
+                placeSearch.update(region: context.region)
             }
         }
     }
@@ -183,6 +282,32 @@ struct MapSpoofView: View {
         return model.simulatedCoordinate == nil ? "location.fill" : "mappin.and.ellipse"
     }
 
+    private func eventBanner(_ event: SimulationEvent) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: eventSymbol(event.kind))
+                .font(.headline)
+                .foregroundStyle(eventColor(event.kind))
+                .frame(width: 28, height: 28)
+                .background(eventColor(event.kind).opacity(0.13), in: Circle())
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(event.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(event.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
+    }
+
     private func activeBanner(_ coordinate: SelectedCoordinate) -> some View {
         HStack(spacing: 9) {
             Circle()
@@ -199,31 +324,101 @@ struct MapSpoofView: View {
         .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
     }
 
-    private func search() async {
+    private func eventSymbol(_ kind: SimulationEventKind) -> String {
+        switch kind {
+        case .started: return "location.fill"
+        case .moved: return "mappin.and.ellipse"
+        case .stopped: return "location.slash.fill"
+        case .connectionLost: return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private func eventColor(_ kind: SimulationEventKind) -> Color {
+        switch kind {
+        case .started: return .green
+        case .moved: return .blue
+        case .stopped: return .gray
+        case .connectionLost: return .red
+        }
+    }
+
+    private func show(_ event: SimulationEvent?) {
+        guard let event else { return }
+        eventDismissTask?.cancel()
+
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+            displayedEvent = event
+        }
+
+        eventDismissTask = Task {
+            try? await Task.sleep(for: .seconds(event.kind == .connectionLost ? 4 : 2.6))
+            guard !Task.isCancelled, displayedEvent?.id == event.id else { return }
+            withAnimation(.easeOut(duration: 0.22)) {
+                displayedEvent = nil
+            }
+        }
+    }
+
+    private func searchSubmittedText() {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty, !isSearching else { return }
+        guard !query.isEmpty else { return }
 
+        beginSearch(fallbackName: query) {
+            try await placeSearch.resolve(query: query, region: visibleRegion)
+        }
+    }
+
+    private func selectSuggestion(_ suggestion: PlaceSuggestion) {
+        let region = visibleRegion
+        beginSearch(fallbackName: suggestion.title) {
+            try await placeSearch.resolve(suggestion, region: region)
+        }
+    }
+
+    private func beginSearch(
+        fallbackName: String,
+        operation: @escaping @MainActor () async throws -> MKMapItem
+    ) {
+        searchTask?.cancel()
+        placeSearch.cancelAll()
+
+        let operationID = UUID()
+        searchOperationID = operationID
         isSearching = true
-        defer { isSearching = false }
 
-        do {
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = query
-            let response = try await MKLocalSearch(request: request).start()
-            guard let coordinate = response.mapItems.first?.placemark.coordinate else {
-                throw MapSearchError.noResults
+        searchTask = Task { @MainActor in
+            defer {
+                if searchOperationID == operationID {
+                    searchOperationID = nil
+                    isSearching = false
+                }
             }
 
-            select(coordinate)
-            cameraPosition = .region(
-                MKCoordinateRegion(
-                    center: coordinate,
-                    latitudinalMeters: 2_000,
-                    longitudinalMeters: 2_000
-                )
-            )
-        } catch {
-            model.showError(title: "Search Failed", error: error)
+            do {
+                let item = try await operation()
+                try Task.checkCancellation()
+                guard searchOperationID == operationID else { return }
+
+                let coordinate = item.placemark.coordinate
+                select(coordinate)
+
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    cameraPosition = .region(
+                        MKCoordinateRegion(
+                            center: coordinate,
+                            latitudinalMeters: 2_000,
+                            longitudinalMeters: 2_000
+                        )
+                    )
+                }
+
+                isSearchPresented = false
+                searchText = item.name ?? fallbackName
+                placeSearch.clearSuggestions()
+            } catch {
+                guard !Task.isCancelled else { return }
+                model.showError(title: "Search Failed", error: error)
+            }
         }
     }
 
@@ -245,13 +440,5 @@ struct MapSpoofView: View {
     private static func store(_ coordinate: SelectedCoordinate) {
         guard let data = try? JSONEncoder().encode(coordinate) else { return }
         UserDefaults.standard.set(data, forKey: storedCoordinateKey)
-    }
-}
-
-private enum MapSearchError: LocalizedError {
-    case noResults
-
-    var errorDescription: String? {
-        "No matching place was found."
     }
 }

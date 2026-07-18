@@ -5,6 +5,11 @@ and asking iOS's developer location-simulation service to report that point to
 Core Location clients. It is designed for an iOS 26 device and an unsigned IPA
 that SideStore re-signs during sideloading.
 
+The map includes live MapKit place/address suggestions, draggable selection,
+animated start/move/stop confirmations, haptic feedback, and a local
+notification watchdog that warns when Waypoint can no longer confirm the
+developer connection.
+
 ## Status
 
 The mechanism is proven on iOS 26 by StikDebug 3.1.6. This repository is a new,
@@ -106,7 +111,8 @@ top-level `Payload` directory and zip it with an `.ipa` suffix.
 5. Search, tap the map, or drag the red pin.
 6. Tap **Start spoofing**. The default keepalive uses low-accuracy background
    location activity plus silent audio mixed with other playback; it is visible
-   as a toggle in setup and uses extra battery.
+   as a toggle in setup and uses extra battery. Allow notifications when asked
+   so Waypoint can warn after roughly 30 seconds without a successful heartbeat.
 7. Tap **Stop** before disconnecting the VPN to restore real GPS.
 
 ## Important limitations
@@ -116,6 +122,9 @@ top-level `Payload` directory and zip it with an `.ipa` suffix.
 - Apps may cross-check IP address, time zone, Wi-Fi, cellular, or motion data.
 - The DVT connection must stay alive. Backgrounding, force-quitting, SideStore
   profile expiry, VPN interruption, or iOS memory pressure can end the spoof.
+- A watchdog notification means Waypoint could not confirm the connection; it
+  is intentionally cautious because iOS cannot prove the GPS state after the
+  app has been suspended or terminated.
 - The keepalive improves app-switching reliability but is not a guarantee. iOS
   can still suspend or terminate the process, and a force-quit ends it.
 - Use it for development and testing, and follow the rules of destination apps

@@ -97,6 +97,12 @@ struct SetupView: View {
                 Text("While spoofing, Waypoint can use low-accuracy location updates and silent, mixed audio to keep the developer connection alive after you switch apps. iOS may show location activity and this uses extra battery.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+
+                Label("Connection-loss notifications", systemImage: "bell.badge.fill")
+                    .font(.subheadline.weight(.medium))
+                Text("Allow notifications when first starting a spoof. Waypoint will warn if its heartbeat stops for about 30 seconds or if it detects that the developer connection ended.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
