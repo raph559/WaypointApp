@@ -19,16 +19,17 @@ targets:
     platform: iOS
     sources:
       - path: Waypoint
-    info:
-      path: Waypoint/Info.plist
-    entitlements:
-      path: Waypoint/Waypoint.entitlements
+        excludes:
+          - Info.plist
+          - Waypoint.entitlements
     settings:
       base:
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Waypoint/Waypoint.entitlements
         CURRENT_PROJECT_VERSION: 1
         DEVELOPMENT_TEAM: ""
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Waypoint/Info.plist
         MARKETING_VERSION: "0.1.0"
         PRODUCT_BUNDLE_IDENTIFIER: app.waypoint.ios
         PRODUCT_NAME: Waypoint
