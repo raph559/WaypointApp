@@ -92,7 +92,8 @@ struct MapSpoofView: View {
             isPresented: $isSearchPresented,
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search a place or address"
-        ) {
+        )
+        .searchSuggestions {
             searchSuggestions
         }
         .onSubmit(of: .search) {
