@@ -30,10 +30,12 @@
       src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white"
       alt="SwiftUI"
     >
-    <img
-      src="https://img.shields.io/badge/version-0.2.0-00B7C7"
-      alt="Version 0.2.0"
-    >
+    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.2.0">
+      <img
+        src="https://img.shields.io/badge/version-0.2.0-00B7C7"
+        alt="Version 0.2.0"
+      >
+    </a>
     <a href="LICENSE">
       <img
         src="https://img.shields.io/badge/license-MIT-blue"
@@ -43,10 +45,10 @@
   </p>
 
   <p>
-    <a href="https://github.com/raph559/WaypointApp/actions/workflows/build-ipa.yml?query=branch%3Amain+is%3Asuccess">
+    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.2.0-unsigned.ipa">
       <img
-        src="https://img.shields.io/badge/Get%20the%20IPA-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"
-        alt="Get the unsigned IPA from GitHub Actions"
+        src="https://img.shields.io/badge/Download-Waypoint%20IPA-2088FF?style=for-the-badge&logo=apple&logoColor=white"
+        alt="Download the latest Waypoint IPA"
       >
     </a>
   </p>
@@ -107,16 +109,13 @@ normally only need to be mounted again after restarting the iPhone.
 Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
 ID during installation.
 
-1. Open the
-   [latest successful build on main](https://github.com/raph559/WaypointApp/actions/workflows/build-ipa.yml?query=branch%3Amain+is%3Asuccess).
-2. Select the newest successful **Build unsigned IPA** run.
-3. Download the **Waypoint-unsigned-ipa** artifact.
-4. Extract the downloaded ZIP.
-5. Import <code>Waypoint-unsigned.ipa</code> into SideStore.
+1. Download
+   [<code>Waypoint-iOS26-v0.2.0-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.2.0-unsigned.ipa).
+2. Open or share the IPA with SideStore.
+3. Install it as a normal SideStore app.
 
-GitHub may require you to sign in before downloading workflow artifacts.
-Artifacts are retained for 30 days; if none is available, run the included
-workflow from a fork or use one of the build methods below.
+Release notes and the SHA-256 checksum are available on the
+[Waypoint 0.2.0 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.2.0).
 
 ## First-time setup
 
