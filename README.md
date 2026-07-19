@@ -30,10 +30,10 @@
       src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white"
       alt="SwiftUI"
     >
-    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.4.1">
+    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.4.2">
       <img
-        src="https://img.shields.io/badge/version-0.4.1-00B7C7"
-        alt="Version 0.4.1"
+        src="https://img.shields.io/badge/version-0.4.2-00B7C7"
+        alt="Version 0.4.2"
       >
     </a>
     <a href="LICENSE">
@@ -45,7 +45,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.1-unsigned.ipa">
+    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.2-unsigned.ipa">
       <img
         src="https://img.shields.io/badge/Download-Waypoint%20IPA-2088FF?style=for-the-badge&logo=apple&logoColor=white"
         alt="Download the latest Waypoint IPA"
@@ -116,12 +116,12 @@ Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
 ID during installation.
 
 1. Download
-   [<code>Waypoint-iOS26-v0.4.1-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.1-unsigned.ipa).
+   [<code>Waypoint-iOS26-v0.4.2-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.2-unsigned.ipa).
 2. Open or share the IPA with SideStore.
 3. Install it as a normal SideStore app.
 
 Release notes and the SHA-256 checksum are available on the
-[Waypoint 0.4.1 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.4.1).
+[Waypoint 0.4.2 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.4.2).
 
 ## First-time setup
 
@@ -167,8 +167,10 @@ every iOS suspension or termination.
 
 If Waypoint goes roughly 30 seconds without a successful heartbeat, its
 watchdog can notify you that the simulated location can no longer be confirmed.
-Notifications are optional but required for these alerts. The wording is
-intentionally cautious: after iOS suspends or terminates the app, Waypoint
+Enable **Notify If Spoof Stops** under **Settings > Reliability** to receive
+these alerts, including without Wi-Fi or mobile data. If permission was denied,
+Waypoint provides a direct shortcut to iOS notification settings. The wording
+is intentionally cautious: after iOS suspends or terminates the app, Waypoint
 cannot directly verify the current GPS state.
 
 ### Mobile data with no Wi-Fi — experimental
@@ -315,8 +317,9 @@ Place the archived <code>Waypoint.app</code> inside a top-level
 
 ## Project status
 
-Waypoint **0.4.1** adds a connection-aware Start button and a much shorter
-Settings screen while keeping the guided cellular workflow from 0.4.0.
+Waypoint **0.4.2** adds an explicit disconnect-alert switch with native iOS
+permission handling. It keeps the connection-aware Start button and compact
+Settings screen introduced in 0.4.1.
 
 - The underlying no-Wi-Fi cellular handoff in Waypoint 0.3.0 was installed
   through SideStore and confirmed on a physical iPhone running iOS 26.

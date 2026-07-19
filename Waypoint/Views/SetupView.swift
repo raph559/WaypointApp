@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct SetupView: View {
@@ -84,11 +85,26 @@ struct SetupView: View {
             }
 
             Section {
+                Toggle(
+                    "Notify If Spoof Stops",
+                    isOn: Binding(
+                        get: { model.disconnectAlertsEnabled },
+                        set: { model.setDisconnectAlertsEnabled($0) }
+                    )
+                )
+                .disabled(model.isUpdatingDisconnectAlerts)
+
+                if model.disconnectAlertsDenied {
+                    Link(destination: URL(string: UIApplication.openNotificationSettingsURLString)!) {
+                        Label("Open Notification Settings", systemImage: "bell.badge")
+                    }
+                }
+
                 Toggle("Keep Spoof Active", isOn: $model.backgroundKeepAliveEnabled)
             } header: {
                 Text("Reliability")
             } footer: {
-                Text("Improves background reliability and may use more battery. Notifications warn if the spoof stops.")
+                Text("Alerts warn you if Waypoint can no longer confirm the spoof.")
             }
 
             Section {

@@ -14,7 +14,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var simulationEvent: SimulationEvent?
     @Published private(set) var cellularHandoffState: CellularHandoffState = .idle
     @Published private(set) var cellularLaunchState: CellularLaunchState = .idle
-    @Published private(set) var notificationWarningsEnabled = true
+    @Published private(set) var disconnectAlertsEnabled = false
+    @Published private(set) var disconnectAlertsDenied = false
+    @Published private(set) var isUpdatingDisconnectAlerts = false
     @Published var alert: AppAlert?
     @Published var isSetupPresented = false
     @Published var isCellularStartPresented = false
@@ -46,7 +48,11 @@ final class AppModel: ObservableObject {
     private var isApplicationActive = true
     private var didLeaveForLocalDevVPN = false
     private var pendingLaunchRoute: GuidedLaunchRoute?
+    private var disconnectAlertsPreference = false
+    private var hasStoredDisconnectAlertsPreference = false
+    private var notificationSettingsOperationID: UUID?
     private static let keepAliveKey = "backgroundKeepAliveEnabled"
+    private static let disconnectAlertsKey = "disconnectAlertsEnabled"
     private static let pairingCallbackScheme = "waypoint-pairing-c7f2e8b4"
 
     init() {
@@ -54,6 +60,15 @@ final class AppModel: ObservableObject {
             UserDefaults.standard.set(true, forKey: Self.keepAliveKey)
         }
         backgroundKeepAliveEnabled = UserDefaults.standard.bool(forKey: Self.keepAliveKey)
+
+        let storedDisconnectPreference = UserDefaults.standard.object(forKey: Self.disconnectAlertsKey)
+        hasStoredDisconnectAlertsPreference = storedDisconnectPreference != nil
+        disconnectAlertsPreference = storedDisconnectPreference as? Bool ?? false
+        SimulationNotificationMonitor.shared.setAlertsEnabled(false)
+    }
+
+    var notificationWarningsEnabled: Bool {
+        disconnectAlertsEnabled
     }
 
     var isReady: Bool {
@@ -90,6 +105,7 @@ final class AppModel: ObservableObject {
     }
 
     func refreshLocalState() {
+        refreshDisconnectAlertSettings()
         pairingState = PairingFileStore.exists ? .ready : .required
 
         if SimulationNotificationMonitor.shared.consumeStaleSessionMarker() {
@@ -103,6 +119,30 @@ final class AppModel: ObservableObject {
         if !PairingFileStore.exists {
             tunnelState = .required
             developerImageState = .required
+        }
+    }
+
+    func setDisconnectAlertsEnabled(_ enabled: Bool) {
+        let operationID = UUID()
+        notificationSettingsOperationID = operationID
+        hasStoredDisconnectAlertsPreference = true
+        disconnectAlertsPreference = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.disconnectAlertsKey)
+
+        guard enabled else {
+            disconnectAlertsEnabled = false
+            disconnectAlertsDenied = false
+            isUpdatingDisconnectAlerts = false
+            SimulationNotificationMonitor.shared.setAlertsEnabled(false)
+            notificationSettingsOperationID = nil
+            return
+        }
+
+        isUpdatingDisconnectAlerts = true
+        Task { [weak self] in
+            guard let self else { return }
+            let authorization = await SimulationNotificationMonitor.shared.requestAuthorization()
+            applyDisconnectAlertAuthorization(authorization, operationID: operationID)
         }
     }
 
@@ -141,6 +181,40 @@ final class AppModel: ObservableObject {
 
     func beginCellularLaunch(at coordinate: SelectedCoordinate) {
         beginGuidedLaunch(at: coordinate, route: .cellular)
+    }
+
+    private func refreshDisconnectAlertSettings() {
+        let operationID = UUID()
+        notificationSettingsOperationID = operationID
+        isUpdatingDisconnectAlerts = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            let authorization = await SimulationNotificationMonitor.shared.authorizationState()
+            guard notificationSettingsOperationID == operationID else { return }
+
+            if !hasStoredDisconnectAlertsPreference {
+                hasStoredDisconnectAlertsPreference = true
+                disconnectAlertsPreference = authorization == .authorized
+                UserDefaults.standard.set(disconnectAlertsPreference, forKey: Self.disconnectAlertsKey)
+            }
+
+            applyDisconnectAlertAuthorization(authorization, operationID: operationID)
+        }
+    }
+
+    private func applyDisconnectAlertAuthorization(
+        _ authorization: SimulationNotificationAuthorization,
+        operationID: UUID
+    ) {
+        guard notificationSettingsOperationID == operationID else { return }
+
+        let enabled = disconnectAlertsPreference && authorization == .authorized
+        disconnectAlertsEnabled = enabled
+        disconnectAlertsDenied = disconnectAlertsPreference && authorization == .denied
+        isUpdatingDisconnectAlerts = false
+        notificationSettingsOperationID = nil
+        SimulationNotificationMonitor.shared.setAlertsEnabled(enabled)
     }
 
     private func beginGuidedLaunch(at coordinate: SelectedCoordinate, route: GuidedLaunchRoute) {
@@ -459,6 +533,7 @@ final class AppModel: ObservableObject {
 
     func applicationBecameActive() {
         isApplicationActive = true
+        refreshDisconnectAlertSettings()
         if case .openingLocalDevVPN = cellularLaunchState,
            didLeaveForLocalDevVPN {
             localDevVPNDidReturn()
@@ -751,9 +826,6 @@ final class AppModel: ObservableObject {
 
                 guard cellularLaunchOperationID == operationID else { return }
                 cellularLaunchState = .cachingSupportFiles("Finishing one-time setup…")
-                notificationWarningsEnabled = await SimulationNotificationMonitor.shared.prepareAuthorization()
-                try Task.checkCancellation()
-
                 guard cellularLaunchOperationID == operationID else { return }
                 cellularLaunchState = .openingLocalDevVPN
                 didLeaveForLocalDevVPN = false

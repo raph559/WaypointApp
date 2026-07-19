@@ -2,6 +2,12 @@ import Foundation
 import UIKit
 import UserNotifications
 
+enum SimulationNotificationAuthorization: Equatable {
+    case notDetermined
+    case authorized
+    case denied
+}
+
 @MainActor
 final class SimulationNotificationMonitor {
     static let shared = SimulationNotificationMonitor()
@@ -13,11 +19,50 @@ final class SimulationNotificationMonitor {
     private var activeSessionID: UUID?
     private var refreshGeneration = UUID()
     private var pendingWatchdogIDs = Set<String>()
+    private var alertsEnabled = false
 
     private init() {}
 
     func prepareAuthorization() async -> Bool {
-        await notificationsAreAuthorized()
+        await requestAuthorization() == .authorized
+    }
+
+    func authorizationState() async -> SimulationNotificationAuthorization {
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return .authorized
+        case .notDetermined:
+            return .notDetermined
+        case .denied:
+            return .denied
+        @unknown default:
+            return .denied
+        }
+    }
+
+    func requestAuthorization() async -> SimulationNotificationAuthorization {
+        guard await authorizationState() == .notDetermined else {
+            return await authorizationState()
+        }
+
+        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        return await authorizationState()
+    }
+
+    func setAlertsEnabled(_ enabled: Bool) {
+        alertsEnabled = enabled
+        refreshGeneration = UUID()
+
+        guard enabled else {
+            center.removePendingNotificationRequests(withIdentifiers: Array(pendingWatchdogIDs))
+            pendingWatchdogIDs.removeAll()
+            return
+        }
+
+        if let activeSessionID {
+            recordHeartbeat(for: activeSessionID)
+        }
     }
 
     func beginSession(_ sessionID: UUID) {
@@ -28,7 +73,7 @@ final class SimulationNotificationMonitor {
     }
 
     func recordHeartbeat(for sessionID: UUID) {
-        guard activeSessionID == sessionID else { return }
+        guard activeSessionID == sessionID, alertsEnabled else { return }
 
         let generation = UUID()
         refreshGeneration = generation
@@ -47,13 +92,12 @@ final class SimulationNotificationMonitor {
         let request = UNNotificationRequest(identifier: requestID, content: content, trigger: trigger)
 
         Task { [weak self] in
-            guard let self, await notificationsAreAuthorized() else {
+            guard let self,
+                  alertsEnabled,
+                  activeSessionID == sessionID,
+                  refreshGeneration == generation,
+                  await notificationsAreAuthorized() else {
                 self?.pendingWatchdogIDs.remove(requestID)
-                return
-            }
-
-            guard activeSessionID == sessionID, refreshGeneration == generation else {
-                pendingWatchdogIDs.remove(requestID)
                 return
             }
 
@@ -64,7 +108,9 @@ final class SimulationNotificationMonitor {
                 return
             }
 
-            guard activeSessionID == sessionID, refreshGeneration == generation else {
+            guard alertsEnabled,
+                  activeSessionID == sessionID,
+                  refreshGeneration == generation else {
                 center.removePendingNotificationRequests(withIdentifiers: [requestID])
                 pendingWatchdogIDs.remove(requestID)
                 return
@@ -83,24 +129,40 @@ final class SimulationNotificationMonitor {
 
     func reportUnexpectedStop(for sessionID: UUID) {
         guard activeSessionID == sessionID else { return }
+        let shouldNotify = alertsEnabled
         invalidateInMemorySession(clearMarker: true)
 
-        guard UIApplication.shared.applicationState != .active else { return }
+        guard shouldNotify, UIApplication.shared.applicationState != .active else { return }
 
         let content = UNMutableNotificationContent()
         content.title = "Waypoint spoof stopped"
         content.body = "The developer connection ended. Your iPhone may now be using its real location."
         content.sound = .default
 
+        let requestID = "app.waypoint.simulation-ended.\(UUID().uuidString)"
         let request = UNNotificationRequest(
-            identifier: "app.waypoint.simulation-ended.\(UUID().uuidString)",
+            identifier: requestID,
             content: content,
             trigger: nil
         )
+        let generation = refreshGeneration
 
         Task { [weak self] in
-            guard let self, await notificationsAreAuthorized() else { return }
-            try? await center.add(request)
+            guard let self,
+                  alertsEnabled,
+                  refreshGeneration == generation,
+                  await notificationsAreAuthorized() else { return }
+
+            do {
+                try await center.add(request)
+            } catch {
+                return
+            }
+
+            guard alertsEnabled, refreshGeneration == generation else {
+                center.removePendingNotificationRequests(withIdentifiers: [requestID])
+                return
+            }
         }
     }
 
@@ -114,17 +176,7 @@ final class SimulationNotificationMonitor {
     }
 
     private func notificationsAreAuthorized() async -> Bool {
-        let settings = await center.notificationSettings()
-        switch settings.authorizationStatus {
-        case .authorized, .provisional, .ephemeral:
-            return true
-        case .notDetermined:
-            return (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
-        case .denied:
-            return false
-        @unknown default:
-            return false
-        }
+        await authorizationState() == .authorized
     }
 
     private func invalidateInMemorySession(clearMarker: Bool) {

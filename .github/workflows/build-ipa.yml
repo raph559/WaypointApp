@@ -118,6 +118,7 @@ jobs:
             "" \
             "### Highlights" \
             "" \
+            "- Explicit Notify If Spoof Stops switch with native iOS permission and Settings handling" \
             "- Connection-aware Start button: Start spoofing on Wi-Fi and Start on mobile data on 4G/5G" \
             "- Compact Settings screen with only status, device setup, reliability, and troubleshooting controls" \
             "- Guided Start on mobile data with automatic support-file caching, LocalDevVPN launch, device preparation, and retained-session verification" \
@@ -126,7 +127,7 @@ jobs:
             "- Native MapKit map with live place and address autocomplete" \
             "- Tap or drag the pin, then start or move the simulated location" \
             "- Visual and haptic Start, Move, Stop, and connection-loss feedback" \
-            "- Optional background keepalive and cautious watchdog notifications" \
+            "- Optional background keepalive and cautious watchdog alerts that work without internet" \
             "" \
             "### Install" \
             "" \

@@ -94,6 +94,9 @@ struct CellularStartView: View {
         .onChange(of: model.cellularLaunchState) { _, _ in
             updateSuccessDismissal()
         }
+        .onChange(of: model.disconnectAlertsEnabled) { _, _ in
+            updateSuccessDismissal()
+        }
         .onDisappear {
             successDismissTask?.cancel()
             successDismissTask = nil
@@ -182,12 +185,24 @@ struct CellularStartView: View {
 
         case .succeeded:
             if !model.notificationWarningsEnabled {
-                Link(destination: URL(string: UIApplication.openSettingsURLString)!) {
-                    Label("Enable Notifications in Settings", systemImage: "bell.badge")
-                        .frame(maxWidth: .infinity)
+                if model.disconnectAlertsDenied {
+                    Link(destination: URL(string: UIApplication.openNotificationSettingsURLString)!) {
+                        Label("Open Notification Settings", systemImage: "bell.badge")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                } else {
+                    Button {
+                        model.setDisconnectAlertsEnabled(true)
+                    } label: {
+                        Label("Enable Stop Alerts", systemImage: "bell.badge")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(model.isUpdatingDisconnectAlerts)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
             }
 
         default:
@@ -310,7 +325,7 @@ struct CellularStartView: View {
                 title: model.isLaunchingOnWiFi ? "Spoof Active" : "Spoof Active on Mobile Data",
                 message: model.notificationWarningsEnabled
                     ? (model.isLaunchingOnWiFi ? "You can now use other apps." : "You can now use other apps on 4G/5G.")
-                    : "The spoof is active. Stop warnings are off because notifications were not allowed.",
+                    : "The spoof is active. Stop alerts are off.",
                 showsActivity: false
             )
 
