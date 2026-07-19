@@ -37,7 +37,7 @@ struct SetupView: View {
                 Text("Status")
             }
 
-            Section("Device Setup") {
+            Section {
                 Menu {
                     Button {
                         isChoosingPairingFile = true
@@ -77,21 +77,27 @@ struct SetupView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+            } header: {
+                Text("Device Setup")
             } footer: {
                 Text("Choose Files for the most private pairing import.")
             }
 
-            Section("Reliability") {
+            Section {
                 Toggle("Keep Spoof Active", isOn: $model.backgroundKeepAliveEnabled)
+            } header: {
+                Text("Reliability")
             } footer: {
                 Text("Improves background reliability and may use more battery. Notifications warn if the spoof stops.")
             }
 
-            Section("Troubleshooting") {
+            Section {
                 Button("Reset Support Files", role: .destructive) {
                     model.resetDeveloperImage()
                 }
                 .disabled(model.isPreparing || model.simulatedCoordinate != nil)
+            } header: {
+                Text("Troubleshooting")
             } footer: {
                 Text("Use this only if device preparation keeps failing.")
             }
