@@ -12,11 +12,10 @@ developer connection.
 
 ## Status
 
-The mechanism is proven on iOS 26 by StikDebug 3.1.6. This repository is a new,
-smaller implementation over the MIT-licensed `idevice` FFI. It still needs a
-real Xcode 26 archive build and device validation before being treated as a
-release. The Linux development environment used to create this source cannot
-compile an iPhone app.
+Version 0.2.0 has been archived successfully with Xcode 26.0.1 by GitHub Actions,
+installed through SideStore, and validated on a physical iPhone running iOS 26.
+The implementation uses the MIT-licensed `idevice` FFI and the same underlying
+developer location-simulation mechanism proven by StikDebug 3.1.6.
 
 Test unmodified
 [`StikDebug 3.1.6`](https://github.com/StephenDev0/StikDebug/releases/tag/3.1.6)
@@ -62,7 +61,7 @@ the direct callback URL (which contains the record), so prefer Files import.
 ### Codemagic
 
 Add the repository in Codemagic, select the `waypoint-unsigned` workflow, and
-build this branch. `codemagic.yaml` pins the Xcode 26 image, fetches and verifies
+build the `main` branch. `codemagic.yaml` pins the Xcode 26 image, fetches and verifies
 the location-enabled `idevice` archive, then publishes `Waypoint-unsigned.ipa`
 as a build artifact for SideStore to re-sign.
 
@@ -130,7 +129,7 @@ top-level `Payload` directory and zip it with an `.ipa` suffix.
 - Use it for development and testing, and follow the rules of destination apps
   and services. Waypoint does not attempt to hide simulation.
 
-## Before calling it release-ready
+## Recommended regression checks
 
 Validate pairing import, first DDI mount, remount after reboot, drag/tap/search,
 Start/Move/Stop, VPN interruption, lock/unlock, app backgrounding, SideStore
