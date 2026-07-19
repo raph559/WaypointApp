@@ -52,6 +52,15 @@ struct MapSpoofView: View {
                 placeSearch.cancelAll()
                 placeSearch.clearSuggestions()
             }
+            .onChange(of: model.isCellularLaunchRunning) { _, isRunning in
+                guard isRunning else { return }
+                searchTask?.cancel()
+                searchOperationID = nil
+                isSearching = false
+                isSearchPresented = false
+                placeSearch.cancelAll()
+                placeSearch.clearSuggestions()
+            }
             .onDisappear {
                 searchTask?.cancel()
                 eventDismissTask?.cancel()
@@ -91,8 +100,12 @@ struct MapSpoofView: View {
                     Image(systemName: model.isReady ? "checkmark.shield.fill" : "gearshape.fill")
                         .foregroundStyle(model.isReady ? .green : .primary)
                 }
-                .accessibilityLabel("Device setup")
+                .accessibilityLabel("Advanced setup")
             }
+        }
+        .sheet(isPresented: $model.isCellularStartPresented) {
+            CellularStartView()
+                .environmentObject(model)
         }
     }
 
@@ -278,10 +291,10 @@ struct MapSpoofView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    if model.isReady {
+                    if model.simulatedCoordinate != nil {
                         Task { await model.startSimulation(at: selection) }
                     } else {
-                        model.isSetupPresented = true
+                        model.beginCellularLaunch(at: selection)
                     }
                 } label: {
                     Label(primaryButtonTitle, systemImage: primaryButtonSymbol)
@@ -289,7 +302,35 @@ struct MapSpoofView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(model.isChangingSimulation || model.areLocationWritesPausedForCellularHandoff)
+                .disabled(
+                    model.isChangingSimulation ||
+                    model.isPreparing ||
+                    model.areLocationWritesPausedForCellularHandoff ||
+                    model.isCellularLaunchRunning
+                )
+
+                if model.simulatedCoordinate == nil {
+                    Menu {
+                        Button {
+                            Task { await model.startSimulation(at: selection) }
+                        } label: {
+                            Label("Start on current connection", systemImage: "network")
+                        }
+
+                        Button {
+                            model.isSetupPresented = true
+                        } label: {
+                            Label("Advanced setup", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .frame(width: 22)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .accessibilityLabel("More start options")
+                    .disabled(model.isPreparing || model.isCellularLaunchRunning)
+                }
 
                 if model.simulatedCoordinate != nil {
                     Button(role: .destructive) {
@@ -299,8 +340,15 @@ struct MapSpoofView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .disabled(model.isChangingSimulation)
+                    .disabled(model.isChangingSimulation || model.isCellularLaunchRunning)
                 }
+            }
+
+            if model.simulatedCoordinate == nil {
+                Text("Waypoint handles the setup and opens LocalDevVPN for you. You only need to follow the Airplane Mode prompts.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if model.simulatedCoordinate != nil {
@@ -406,14 +454,14 @@ struct MapSpoofView: View {
     }
 
     private var primaryButtonTitle: String {
-        if !model.isReady { return "Set up device" }
         if model.simulatedCoordinate != nil { return "Move spoof here" }
-        return "Start spoofing"
+        return "Start on mobile data"
     }
 
     private var primaryButtonSymbol: String {
-        if !model.isReady { return "gearshape.fill" }
-        return model.simulatedCoordinate == nil ? "location.fill" : "mappin.and.ellipse"
+        return model.simulatedCoordinate == nil
+            ? "antenna.radiowaves.left.and.right"
+            : "mappin.and.ellipse"
     }
 
     private func eventBanner(_ event: SimulationEvent) -> some View {
@@ -445,9 +493,9 @@ struct MapSpoofView: View {
     private func activeBanner(_ coordinate: SelectedCoordinate) -> some View {
         HStack(spacing: 9) {
             Circle()
-                .fill(.red)
+                .fill(activeStatusColor)
                 .frame(width: 9, height: 9)
-            Text("Spoofing \(String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude))")
+            Text(activeStatusText(for: coordinate))
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
             Spacer(minLength: 0)
@@ -456,6 +504,29 @@ struct MapSpoofView: View {
         .padding(.vertical, 10)
         .background(.regularMaterial, in: Capsule())
         .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+    }
+
+    private var activeStatusColor: Color {
+        switch model.cellularHandoffState {
+        case .arming, .waiting, .verifying, .failed:
+            return .orange
+        case .idle, .succeeded:
+            return .red
+        }
+    }
+
+    private func activeStatusText(for coordinate: SelectedCoordinate) -> String {
+        let formatted = String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude)
+        switch model.cellularHandoffState {
+        case .arming, .waiting, .verifying:
+            return "Switching to mobile data…"
+        case .failed:
+            return "Spoof unverified — updates paused"
+        case .succeeded:
+            return "Spoofing on mobile data · \(formatted)"
+        case .idle:
+            return "Spoofing \(formatted)"
+        }
     }
 
     private func eventSymbol(_ kind: SimulationEventKind) -> String {
@@ -487,7 +558,16 @@ struct MapSpoofView: View {
         }
 
         eventDismissTask = Task {
-            try? await Task.sleep(for: .seconds(event.kind == .connectionLost ? 4 : 2.6))
+            let duration: TimeInterval
+            switch event.kind {
+            case .cellularReady:
+                duration = 5
+            case .connectionLost:
+                duration = 4
+            case .started, .moved, .stopped:
+                duration = 2.6
+            }
+            try? await Task.sleep(for: .seconds(duration))
             guard !Task.isCancelled, displayedEvent?.id == event.id else { return }
             withAnimation(.easeOut(duration: 0.22)) {
                 displayedEvent = nil
@@ -496,7 +576,8 @@ struct MapSpoofView: View {
     }
 
     private func searchSubmittedText() {
-        guard !model.isCellularHandoffInProgress else { return }
+        guard !model.isCellularHandoffInProgress,
+              !model.isCellularLaunchRunning else { return }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return }
 
@@ -506,7 +587,8 @@ struct MapSpoofView: View {
     }
 
     private func selectSuggestion(_ suggestion: PlaceSuggestion) {
-        guard !model.isCellularHandoffInProgress else { return }
+        guard !model.isCellularHandoffInProgress,
+              !model.isCellularLaunchRunning else { return }
         let region = visibleRegion
         beginSearch(fallbackName: suggestion.title) {
             try await placeSearch.resolve(suggestion, region: region)
@@ -561,7 +643,8 @@ struct MapSpoofView: View {
     }
 
     private func select(_ coordinate: CLLocationCoordinate2D) {
-        guard !model.isCellularHandoffInProgress else { return }
+        guard !model.isCellularHandoffInProgress,
+              !model.isCellularLaunchRunning else { return }
         let value = SelectedCoordinate(coordinate)
         guard value.isValid else { return }
         selection = value

@@ -13,8 +13,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var isChangingSimulation = false
     @Published private(set) var simulationEvent: SimulationEvent?
     @Published private(set) var cellularHandoffState: CellularHandoffState = .idle
+    @Published private(set) var cellularLaunchState: CellularLaunchState = .idle
+    @Published private(set) var notificationWarningsEnabled = true
     @Published var alert: AppAlert?
     @Published var isSetupPresented = false
+    @Published var isCellularStartPresented = false
     @Published var backgroundKeepAliveEnabled: Bool {
         didSet {
             UserDefaults.standard.set(backgroundKeepAliveEnabled, forKey: Self.keepAliveKey)
@@ -35,8 +38,13 @@ final class AppModel: ObservableObject {
     private var resendTask: Task<Void, Never>?
     private var cellularHandoffTask: Task<Void, Never>?
     private var cellularHandoffOperationID: UUID?
+    private var cellularLaunchTask: Task<Void, Never>?
+    private var cellularLaunchOperationID: UUID?
+    private var pendingCellularCoordinate: SelectedCoordinate?
     private var simulationSessionID: UUID?
     private var isStoppingSimulation = false
+    private var isApplicationActive = true
+    private var didLeaveForLocalDevVPN = false
     private static let keepAliveKey = "backgroundKeepAliveEnabled"
     private static let pairingCallbackScheme = "waypoint-pairing-c7f2e8b4"
 
@@ -59,6 +67,23 @@ final class AppModel: ObservableObject {
         simulatedCoordinate != nil && cellularHandoffState.pausesLocationWrites
     }
 
+    var canCancelCellularLaunch: Bool {
+        cellularLaunchOperationID != nil && cellularLaunchState.canCancelSafely
+    }
+
+    var isCellularLaunchRunning: Bool {
+        cellularLaunchOperationID != nil
+    }
+
+    var canReplacePairingForCellularLaunch: Bool {
+        guard cellularLaunchOperationID != nil,
+              simulatedCoordinate == nil,
+              case .failed = cellularLaunchState else {
+            return false
+        }
+        return true
+    }
+
     func refreshLocalState() {
         pairingState = PairingFileStore.exists ? .ready : .required
 
@@ -73,7 +98,6 @@ final class AppModel: ObservableObject {
         if !PairingFileStore.exists {
             tunnelState = .required
             developerImageState = .required
-            isSetupPresented = true
         }
     }
 
@@ -90,19 +114,133 @@ final class AppModel: ObservableObject {
         UIApplication.shared.open(url) { [weak self] didOpen in
             guard !didOpen else { return }
             Task { @MainActor in
-                self?.presentError(
-                    title: "SideStore Not Found",
-                    message: "Open SideStore manually, export its .mobiledevicepairing file, then use Choose File in Waypoint."
+                self?.pairingImportFailed(
+                    "SideStore could not be opened. Open it manually, export its .mobiledevicepairing file, then choose the file in Waypoint."
                 )
             }
         }
     }
 
+    func beginCellularLaunch(at coordinate: SelectedCoordinate) {
+        guard coordinate.isValid,
+              simulatedCoordinate == nil,
+              !isChangingSimulation,
+              !isPreparing,
+              cellularLaunchOperationID == nil else {
+            return
+        }
+
+        let operationID = UUID()
+        cellularLaunchOperationID = operationID
+        pendingCellularCoordinate = coordinate
+        cellularLaunchState = PairingFileStore.exists ? .cachingSupportFiles("Checking one-time files…") : .needsPairing
+        isCellularStartPresented = true
+        isSetupPresented = false
+        didLeaveForLocalDevVPN = false
+        _ = CellularPathMonitor.shared
+
+        if PairingFileStore.exists {
+            startCellularPreflight(operationID: operationID)
+        }
+    }
+
+    func cancelCellularLaunch() {
+        guard canCancelCellularLaunch else { return }
+        let operationID = cellularLaunchOperationID
+        let needsBridgeCleanup: Bool
+        if case .preparingDevice = cellularLaunchState {
+            needsBridgeCleanup = true
+        } else {
+            needsBridgeCleanup = false
+        }
+
+        cellularLaunchTask?.cancel()
+
+        if needsBridgeCleanup, let operationID {
+            pendingCellularCoordinate = nil
+            cellularLaunchState = .idle
+            isCellularStartPresented = false
+            didLeaveForLocalDevVPN = false
+            cellularLaunchTask = Task { [weak self] in
+                guard let self else { return }
+                await bridge.disconnect()
+                guard cellularLaunchOperationID == operationID else { return }
+                invalidateConnectionReadiness()
+                cellularLaunchTask = nil
+                cellularLaunchOperationID = nil
+            }
+            return
+        }
+
+        cellularLaunchTask = nil
+        cellularLaunchOperationID = nil
+        pendingCellularCoordinate = nil
+        cellularLaunchState = .idle
+        isCellularStartPresented = false
+        didLeaveForLocalDevVPN = false
+    }
+
+    func retryCellularLaunch() {
+        guard case .failed = cellularLaunchState,
+              let operationID = cellularLaunchOperationID,
+              pendingCellularCoordinate != nil else {
+            return
+        }
+
+        if simulatedCoordinate != nil, simulationSessionID != nil {
+            waitForOfflineThenRetryHandoff(operationID: operationID)
+        } else if PairingFileStore.exists {
+            startCellularPreflight(operationID: operationID)
+        } else {
+            cellularLaunchState = .needsPairing
+        }
+    }
+
+    func replacePairingForCellularLaunch() {
+        guard canReplacePairingForCellularLaunch else { return }
+        cellularLaunchTask?.cancel()
+        cellularLaunchTask = nil
+        pairingState = .required
+        tunnelState = .required
+        developerImageState = .required
+        preparationMessage = "Choose a fresh pairing record"
+        cellularLaunchState = .needsPairing
+    }
+
+    func closeCellularLaunch() {
+        cellularLaunchTask?.cancel()
+        cellularLaunchTask = nil
+        cellularLaunchOperationID = nil
+        pendingCellularCoordinate = nil
+        cellularLaunchState = .idle
+        isCellularStartPresented = false
+        didLeaveForLocalDevVPN = false
+    }
+
+    func finishCellularLaunch() {
+        guard case .succeeded = cellularLaunchState else { return }
+        closeCellularLaunch()
+    }
+
     func handleIncomingURL(_ url: URL) {
-        guard url.scheme?.lowercased() == Self.pairingCallbackScheme,
-              url.host?.lowercased() == "pairingfile",
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+        guard url.scheme?.lowercased() == Self.pairingCallbackScheme else {
+            return
+        }
+
+        let callbackHost = url.host?.lowercased()
+        if callbackHost != "pairingfile" {
+            guard callbackHost == nil,
+                  url.path.isEmpty || url.path == "/",
+                  url.query == nil else {
+                return
+            }
+            localDevVPNDidReturn()
+            return
+        }
+
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let payload = components.queryItems?.first(where: { $0.name.lowercased() == "data" })?.value else {
+            pairingImportFailed("SideStore returned an invalid pairing callback.")
             return
         }
 
@@ -111,14 +249,20 @@ final class AppModel: ObservableObject {
             return
         }
 
+        guard canAcceptPairingImport else { return }
+        let expectedOperationID = cellularLaunchOperationID
+        isPreparing = true
+
         Task {
+            defer { isPreparing = false }
             await bridge.disconnect()
+            guard cellularLaunchOperationID == expectedOperationID else { return }
             do {
                 try PairingFileStore.importBase64(payload)
                 pairingDidChange()
-                await prepareDevice()
+                continueCellularLaunchAfterPairingIfNeeded()
             } catch {
-                presentError(title: "Pairing Import Failed", error: error)
+                pairingImportFailed(error.localizedDescription)
             }
         }
     }
@@ -132,14 +276,19 @@ final class AppModel: ObservableObject {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
+            guard canAcceptPairingImport else { return }
+            let expectedOperationID = cellularLaunchOperationID
+            isPreparing = true
             Task {
+                defer { isPreparing = false }
                 await bridge.disconnect()
+                guard cellularLaunchOperationID == expectedOperationID else { return }
                 do {
                     try PairingFileStore.importFile(at: url)
                     pairingDidChange()
-                    await prepareDevice()
+                    continueCellularLaunchAfterPairingIfNeeded()
                 } catch {
-                    presentError(title: "Pairing Import Failed", error: error)
+                    pairingImportFailed(error.localizedDescription)
                 }
             }
         case .failure(let error):
@@ -147,74 +296,28 @@ final class AppModel: ObservableObject {
             guard !(cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSUserCancelledError) else {
                 return
             }
-            presentError(title: "Pairing Import Failed", error: error)
+            pairingImportFailed(error.localizedDescription)
         }
     }
 
     func prepareDevice() async {
         guard !isPreparing else { return }
+        guard cellularLaunchOperationID == nil else { return }
         guard simulatedCoordinate == nil else {
             presentError(title: "Spoof Is Active", message: "Stop spoofing before reconnecting or preparing the device.")
             return
         }
-        guard PairingFileStore.exists else {
-            pairingState = .required
-            presentError(
-                title: "Pairing File Required",
-                message: "Import the pairing file from SideStore before preparing the device."
-            )
-            return
-        }
-
-        isPreparing = true
-        pairingState = .ready
-        tunnelState = .checking
-        developerImageState = .required
-        preparationMessage = "Connecting through LocalDevVPN…"
 
         do {
-            try await bridge.connect(pairingFile: PairingFileStore.fileURL)
-            tunnelState = .ready
-            developerImageState = .checking
-            preparationMessage = "Checking the developer image…"
-
-            if try await bridge.isDeveloperImageMounted() {
-                developerImageState = .ready
-                preparationMessage = "Device ready"
-                isPreparing = false
-                return
-            }
-
-            for artifact in DeveloperImageStore.artifacts where !DeveloperImageStore.isPresent(artifact) {
-                preparationMessage = "Downloading \(artifact.label)…"
-                try await DeveloperImageStore.download(artifact)
-            }
-
-            preparationMessage = "Mounting the developer image…"
-            try await bridge.mountDeveloperImage(DeveloperImageStore.paths)
-
-            guard try await bridge.isDeveloperImageMounted() else {
-                throw DeviceBridgeError.message("The mount request finished, but iOS did not report a mounted developer image.")
-            }
-
-            developerImageState = .ready
-            preparationMessage = "Device ready"
+            try await prepareDeviceCore()
         } catch {
-            await bridge.disconnect()
-            if !tunnelState.isReady {
-                tunnelState = .failed(error.localizedDescription)
-            } else {
-                tunnelState = .required
-                developerImageState = .failed(error.localizedDescription)
-            }
-            preparationMessage = "Setup needs attention"
+            await recordPreparationFailure(error)
             presentError(title: "Device Preparation Failed", error: error)
         }
-
-        isPreparing = false
     }
 
     func startSimulation(at coordinate: SelectedCoordinate) async {
+        guard cellularLaunchOperationID == nil else { return }
         guard coordinate.isValid else {
             presentError(title: "Invalid Location", message: "Choose a valid point on the map.")
             return
@@ -290,6 +393,7 @@ final class AppModel: ObservableObject {
     }
 
     func stopSimulation() async {
+        guard cellularLaunchOperationID == nil else { return }
         guard !isChangingSimulation else { return }
 
         cancelCellularHandoffWork(resetState: true)
@@ -328,6 +432,12 @@ final class AppModel: ObservableObject {
     }
 
     func applicationBecameActive() {
+        isApplicationActive = true
+        if case .openingLocalDevVPN = cellularLaunchState,
+           didLeaveForLocalDevVPN {
+            localDevVPNDidReturn()
+        }
+        guard cellularLaunchOperationID == nil else { return }
         guard !cellularHandoffState.pausesLocationWrites else { return }
         guard let coordinate = simulatedCoordinate,
               let sessionID = simulationSessionID else { return }
@@ -341,6 +451,13 @@ final class AppModel: ObservableObject {
                 guard simulationSessionID == sessionID else { return }
                 simulationConnectionFailed(error, notificationSessionID: sessionID)
             }
+        }
+    }
+
+    func applicationBecameInactive() {
+        isApplicationActive = false
+        if case .openingLocalDevVPN = cellularLaunchState {
+            didLeaveForLocalDevVPN = true
         }
     }
 
@@ -379,7 +496,7 @@ final class AppModel: ObservableObject {
             }
 
             let baselineDeadline = Date().addingTimeInterval(8)
-            while !CellularPathMonitor.shared.hasObservedOfflineBaseline,
+            while !CellularPathMonitor.shared.isOffline(stableFor: 1),
                   Date() < baselineDeadline {
                 do {
                     try await Task.sleep(for: .milliseconds(250))
@@ -394,7 +511,7 @@ final class AppModel: ObservableObject {
                 }
             }
 
-            guard CellularPathMonitor.shared.hasObservedOfflineBaseline else {
+            guard CellularPathMonitor.shared.isOffline(stableFor: 1) else {
                 cellularHandoffPathCheckFailed(
                     "Waypoint could not confirm the offline starting state. Turn Airplane Mode on, keep Wi-Fi off, then try the handoff again.",
                     operationID: operationID,
@@ -494,8 +611,12 @@ final class AppModel: ObservableObject {
                 cellularHandoffState = .succeeded
                 cellularHandoffTask = nil
                 cellularHandoffOperationID = nil
+                startBackgroundKeepAliveIfNeeded()
                 beginResendLoop(for: sessionID)
                 publishSimulationEvent(.cellularReady)
+                if case .handoff = cellularLaunchState {
+                    cellularLaunchState = .succeeded
+                }
             } catch {
                 guard !Task.isCancelled,
                       cellularHandoffOperationID == operationID,
@@ -506,6 +627,11 @@ final class AppModel: ObservableObject {
                 cellularHandoffState = .failed(error.localizedDescription)
                 cellularHandoffTask = nil
                 cellularHandoffOperationID = nil
+                if case .handoff = cellularLaunchState {
+                    cellularLaunchState = .failed(
+                        "The retained spoof session stopped responding when mobile data returned. Turn Airplane Mode on and try the guided start again."
+                    )
+                }
                 simulationConnectionFailed(
                     error,
                     notificationSessionID: sessionID,
@@ -555,8 +681,12 @@ final class AppModel: ObservableObject {
     }
 
     func resetDeveloperImage() {
-        guard simulatedCoordinate == nil else { return }
+        guard simulatedCoordinate == nil,
+              cellularLaunchOperationID == nil,
+              !isPreparing else { return }
+        isPreparing = true
         Task {
+            defer { isPreparing = false }
             await bridge.disconnect()
             do {
                 try DeveloperImageStore.removeAll()
@@ -566,6 +696,326 @@ final class AppModel: ObservableObject {
             } catch {
                 presentError(title: "Could Not Reset Developer Image", error: error)
             }
+        }
+    }
+
+    private func continueCellularLaunchAfterPairingIfNeeded() {
+        guard let operationID = cellularLaunchOperationID,
+              case .needsPairing = cellularLaunchState else {
+            return
+        }
+        startCellularPreflight(operationID: operationID)
+    }
+
+    private func startCellularPreflight(operationID: UUID) {
+        cellularLaunchTask?.cancel()
+        cancelCellularHandoffWork(resetState: simulatedCoordinate == nil)
+        cellularLaunchState = .cachingSupportFiles("Checking one-time files…")
+
+        cellularLaunchTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                for artifact in DeveloperImageStore.artifacts where !DeveloperImageStore.isPresent(artifact) {
+                    guard cellularLaunchOperationID == operationID else { return }
+                    cellularLaunchState = .cachingSupportFiles("Downloading \(artifact.label)…")
+                    try await DeveloperImageStore.download(artifact)
+                    try Task.checkCancellation()
+                }
+
+                guard cellularLaunchOperationID == operationID else { return }
+                cellularLaunchState = .cachingSupportFiles("Finishing one-time setup…")
+                notificationWarningsEnabled = await SimulationNotificationMonitor.shared.prepareAuthorization()
+                try Task.checkCancellation()
+
+                guard cellularLaunchOperationID == operationID else { return }
+                cellularLaunchState = .openingLocalDevVPN
+                didLeaveForLocalDevVPN = false
+                let didOpen = await openLocalDevVPN()
+                try Task.checkCancellation()
+
+                guard cellularLaunchOperationID == operationID else { return }
+                cellularLaunchTask = nil
+                if !didOpen {
+                    failCellularLaunch(
+                        "LocalDevVPN could not be opened. Install or update LocalDevVPN, then try again.",
+                        operationID: operationID
+                    )
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                failCellularLaunch(
+                    "Waypoint could not download its one-time support files. Turn mobile data on and try again.\n\n\(error.localizedDescription)",
+                    operationID: operationID
+                )
+            }
+        }
+    }
+
+    private func openLocalDevVPN() async -> Bool {
+        var components = URLComponents()
+        components.scheme = "localdevvpn"
+        components.host = "enable"
+        components.queryItems = [
+            URLQueryItem(name: "scheme", value: Self.pairingCallbackScheme)
+        ]
+
+        guard let url = components.url,
+              UIApplication.shared.canOpenURL(url) else {
+            return false
+        }
+
+        return await withCheckedContinuation { continuation in
+            UIApplication.shared.open(url) { didOpen in
+                continuation.resume(returning: didOpen)
+            }
+        }
+    }
+
+    private func localDevVPNDidReturn() {
+        guard case .openingLocalDevVPN = cellularLaunchState,
+              let operationID = cellularLaunchOperationID else {
+            return
+        }
+
+        didLeaveForLocalDevVPN = false
+        cellularLaunchTask?.cancel()
+        cellularLaunchState = .settlingLocalDevVPN
+        cellularLaunchTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                try await Task.sleep(for: .seconds(2))
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled,
+                  cellularLaunchOperationID == operationID else {
+                return
+            }
+
+            await waitForOfflineAndStart(operationID: operationID)
+        }
+    }
+
+    private func waitForOfflineAndStart(operationID: UUID) async {
+        cellularLaunchState = .waitingForAirplaneMode
+
+        while cellularLaunchOperationID == operationID {
+            if isApplicationActive,
+               CellularPathMonitor.shared.isOffline(stableFor: 1) {
+                break
+            }
+
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+            } catch {
+                return
+            }
+        }
+
+        guard !Task.isCancelled,
+              cellularLaunchOperationID == operationID,
+              let coordinate = pendingCellularCoordinate else {
+            return
+        }
+
+        do {
+            cellularLaunchState = .preparingDevice
+            try await prepareDeviceCore()
+            try Task.checkCancellation()
+
+            guard cellularLaunchOperationID == operationID else { return }
+            cellularLaunchState = .startingSpoof
+            try await establishGuidedSimulation(at: coordinate, operationID: operationID)
+            try Task.checkCancellation()
+
+            guard cellularLaunchOperationID == operationID,
+                  simulatedCoordinate != nil,
+                  simulationSessionID != nil else {
+                return
+            }
+
+            cellularLaunchState = .handoff
+            cellularLaunchTask = nil
+            armCellularHandoff()
+        } catch is CancellationError {
+            return
+        } catch {
+            if case .preparingDevice = cellularLaunchState {
+                await recordPreparationFailure(error)
+            } else {
+                invalidateConnectionReadiness()
+                await bridge.disconnect()
+            }
+            failCellularLaunch(
+                "Waypoint could not start the spoof. Confirm Developer Mode is enabled, then try again.\n\n\(error.localizedDescription)",
+                operationID: operationID
+            )
+        }
+    }
+
+    private func waitForOfflineThenRetryHandoff(operationID: UUID) {
+        cellularLaunchTask?.cancel()
+        cellularLaunchState = .waitingForAirplaneMode
+        cellularLaunchTask = Task { [weak self] in
+            guard let self else { return }
+
+            while cellularLaunchOperationID == operationID {
+                if isApplicationActive,
+                   CellularPathMonitor.shared.isOffline(stableFor: 1) {
+                    break
+                }
+
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                } catch {
+                    return
+                }
+            }
+
+            guard !Task.isCancelled,
+                  cellularLaunchOperationID == operationID,
+                  simulatedCoordinate != nil,
+                  simulationSessionID != nil else {
+                return
+            }
+
+            cellularLaunchState = .handoff
+            cellularLaunchTask = nil
+            armCellularHandoff()
+        }
+    }
+
+    private func prepareDeviceCore() async throws {
+        guard !isPreparing else {
+            throw DeviceBridgeError.message("Device preparation is already running.")
+        }
+        guard PairingFileStore.exists else {
+            pairingState = .required
+            throw DeviceBridgeError.message("Import the SideStore pairing record first.")
+        }
+
+        isPreparing = true
+        defer { isPreparing = false }
+
+        pairingState = .ready
+        tunnelState = .checking
+        developerImageState = .required
+        preparationMessage = "Connecting through LocalDevVPN…"
+
+        try await bridge.connect(pairingFile: PairingFileStore.fileURL)
+        try Task.checkCancellation()
+        tunnelState = .ready
+        developerImageState = .checking
+        preparationMessage = "Checking the developer image…"
+
+        if try await bridge.isDeveloperImageMounted() {
+            try Task.checkCancellation()
+            developerImageState = .ready
+            preparationMessage = "Device ready"
+            return
+        }
+
+        for artifact in DeveloperImageStore.artifacts where !DeveloperImageStore.isPresent(artifact) {
+            preparationMessage = "Downloading \(artifact.label)…"
+            try await DeveloperImageStore.download(artifact)
+            try Task.checkCancellation()
+        }
+
+        preparationMessage = "Mounting the developer image…"
+        try await bridge.mountDeveloperImage(DeveloperImageStore.paths)
+        try Task.checkCancellation()
+
+        guard try await bridge.isDeveloperImageMounted() else {
+            throw DeviceBridgeError.message("The mount request finished, but iOS did not report a mounted developer image.")
+        }
+
+        developerImageState = .ready
+        preparationMessage = "Device ready"
+    }
+
+    private func recordPreparationFailure(_ error: Error) async {
+        await bridge.disconnect()
+        if !tunnelState.isReady {
+            tunnelState = .failed(error.localizedDescription)
+        } else {
+            tunnelState = .required
+            developerImageState = .failed(error.localizedDescription)
+        }
+        preparationMessage = "Setup needs attention"
+    }
+
+    private func establishGuidedSimulation(
+        at coordinate: SelectedCoordinate,
+        operationID: UUID
+    ) async throws {
+        guard coordinate.isValid,
+              simulatedCoordinate == nil,
+              simulationSessionID == nil,
+              cellularLaunchOperationID == operationID else {
+            throw DeviceBridgeError.message("The guided start is no longer current.")
+        }
+
+        isChangingSimulation = true
+        defer { isChangingSimulation = false }
+        resendTask?.cancel()
+        resendTask = nil
+
+        try await bridge.setLocation(coordinate)
+        try Task.checkCancellation()
+
+        guard cellularLaunchOperationID == operationID else {
+            try? await bridge.clearLocation()
+            throw CancellationError()
+        }
+
+        let sessionID = UUID()
+        simulationSessionID = sessionID
+        simulatedCoordinate = coordinate
+        UIApplication.shared.isIdleTimerDisabled = true
+        SimulationNotificationMonitor.shared.beginSession(sessionID)
+        publishSimulationEvent(.started, coordinate: coordinate)
+    }
+
+    private func startBackgroundKeepAliveIfNeeded() {
+        guard backgroundKeepAliveEnabled else { return }
+        do {
+            try BackgroundKeepAlive.shared.start()
+        } catch {
+            presentError(
+                title: "Background Keepalive Unavailable",
+                message: "The spoof is active, but background reliability may be reduced.\n\n\(error.localizedDescription)"
+            )
+        }
+    }
+
+    private func failCellularLaunch(_ message: String, operationID: UUID) {
+        guard cellularLaunchOperationID == operationID else { return }
+        cellularLaunchTask = nil
+        cellularLaunchState = .failed(message)
+        feedbackGenerator.prepare()
+        feedbackGenerator.notificationOccurred(.error)
+        UIAccessibility.post(notification: .announcement, argument: message)
+    }
+
+    private var canAcceptPairingImport: Bool {
+        guard !isPreparing else { return false }
+        guard cellularLaunchOperationID != nil else { return true }
+        if case .needsPairing = cellularLaunchState { return true }
+        return false
+    }
+
+    private func pairingImportFailed(_ message: String) {
+        if let operationID = cellularLaunchOperationID {
+            failCellularLaunch(
+                "Waypoint could not import the pairing record. Choose a fresh file from SideStore or Files, then try again.\n\n\(message)",
+                operationID: operationID
+            )
+        } else {
+            presentError(title: "Pairing Import Failed", message: message)
         }
     }
 
@@ -596,6 +1046,11 @@ final class AppModel: ObservableObject {
                         "The phone is no longer on a cellular-only path. Location writes are paused so Waypoint does not make an unsafe cellular-only reconnect attempt."
                     )
                     SimulationNotificationMonitor.shared.recordHeartbeat(for: sessionID)
+                    if case .succeeded = self.cellularLaunchState {
+                        self.cellularLaunchState = .failed(
+                            "The cellular-only path changed before setup finished."
+                        )
+                    }
                     return
                 }
 
@@ -636,10 +1091,16 @@ final class AppModel: ObservableObject {
         publishSimulationEvent(.connectionLost)
         if duringCellularHandoff {
             cellularHandoffState = .idle
-            presentError(
-                title: "Cellular Handoff Failed",
-                message: "The retained developer session stopped responding during the handoff test, so the spoof may have stopped. A new session cannot be opened on cellular alone. Leave Wi-Fi off, reconnect LocalDevVPN while cellular is on, enable Airplane Mode again, then prepare and restart the spoof.\n\n\(error.localizedDescription)"
-            )
+            if cellularLaunchOperationID == nil {
+                presentError(
+                    title: "Cellular Handoff Failed",
+                    message: "The retained developer session stopped responding during the handoff test, so the spoof may have stopped. A new session cannot be opened on cellular alone. Leave Wi-Fi off, reconnect LocalDevVPN while cellular is on, enable Airplane Mode again, then prepare and restart the spoof.\n\n\(error.localizedDescription)"
+                )
+            } else if case .handoff = cellularLaunchState {
+                cellularLaunchState = .failed(
+                    "The spoof connection ended when mobile data returned. Turn Airplane Mode on and try again.\n\n\(error.localizedDescription)"
+                )
+            }
         } else {
             presentError(
                 title: "Simulation Connection Ended",
@@ -662,6 +1123,9 @@ final class AppModel: ObservableObject {
         cellularHandoffTask = nil
         cellularHandoffOperationID = nil
         SimulationNotificationMonitor.shared.recordHeartbeat(for: sessionID)
+        if case .handoff = cellularLaunchState {
+            cellularLaunchState = .failed(message)
+        }
     }
 
     private func cancelCellularHandoffWork(resetState: Bool) {

@@ -5,6 +5,7 @@ struct SetupView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var isChoosingPairingFile = false
+    @State private var isSideStoreConfirmationPresented = false
 
     private let pairingTypes: [UTType] = [
         UTType(filenameExtension: "mobiledevicepairing", conformingTo: .data)!,
@@ -47,14 +48,14 @@ struct SetupView: View {
                         systemImage: "doc.badge.plus"
                     )
                 }
-                .disabled(model.simulatedCoordinate != nil)
+                .disabled(model.isPreparing || model.simulatedCoordinate != nil)
 
                 Button {
-                    model.requestPairingFromSideStore()
+                    isSideStoreConfirmationPresented = true
                 } label: {
                     Label("Direct SideStore callback", systemImage: "arrow.triangle.2.circlepath")
                 }
-                .disabled(model.simulatedCoordinate != nil)
+                .disabled(model.isPreparing || model.simulatedCoordinate != nil)
 
                 Text("Files import is safer. SideStore's direct callback places the pairing record in a custom URL and may include it in SideStore debug logs; use it only if you accept that risk.")
                     .font(.footnote)
@@ -105,37 +106,49 @@ struct SetupView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Cellular without Wi-Fi — experimental") {
-                Label("Retained-session handoff", systemImage: "antenna.radiowaves.left.and.right")
+            Section("Cellular without Wi-Fi") {
+                Label("Guided start", systemImage: "antenna.radiowaves.left.and.right")
                     .font(.subheadline.weight(.medium))
 
-                Text("iOS rejects a new developer connection while cellular is the only active network. Waypoint can test whether a session opened with cellular temporarily disabled survives when 4G/5G returns.")
+                Text("Normally, return to the map and tap “Start on mobile data.” Waypoint checks its one-time files, opens LocalDevVPN, prepares the iPhone, starts the spoof, and verifies the cellular handoff automatically.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
-                Text("Connect LocalDevVPN over cellular, enable Airplane Mode with Wi-Fi off, then prepare and start the spoof. On the map, tap “Switch to cellular (experimental)” and follow the guarded handoff prompt.")
+                Text("The only timed actions iOS requires from you are turning Airplane Mode on and then off when prompted. Keep Wi-Fi off throughout.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
-                Text("Complete normal setup once while online so the developer-image files are already cached. This path is not guaranteed: iOS may close the retained session when cellular returns.")
+                Text("Developer Mode and the pairing record are still required once. The retained-session path is device-dependent, so Waypoint verifies it before reporting success.")
                     .font(.footnote)
                     .foregroundStyle(.orange)
+
+                Button("Use guided start on the map") { dismiss() }
             }
 
             Section {
                 Button("Done") { dismiss() }
-                    .disabled(!model.isReady)
             }
         }
-        .navigationTitle("Set up Waypoint")
+        .navigationTitle("Advanced setup")
         .navigationBarTitleDisplayMode(.inline)
-        .interactiveDismissDisabled(!model.isReady)
         .fileImporter(
             isPresented: $isChoosingPairingFile,
             allowedContentTypes: pairingTypes,
             allowsMultipleSelection: false,
             onCompletion: model.importPairingFile
         )
+        .confirmationDialog(
+            "Import from SideStore?",
+            isPresented: $isSideStoreConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Continue to SideStore") {
+                model.requestPairingFromSideStore()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Pairing records are sensitive. SideStore sends yours through a callback URL that may appear in SideStore debug logs. Choose Files instead if you prefer the safer option.")
+        }
     }
 
     private var pairingDetail: String {

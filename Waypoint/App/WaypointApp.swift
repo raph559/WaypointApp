@@ -14,9 +14,10 @@ struct WaypointApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         model.applicationBecameActive()
+                    } else {
+                        model.applicationBecameInactive()
                     }
                 }
         }
     }
 }
-

@@ -16,6 +16,10 @@ final class SimulationNotificationMonitor {
 
     private init() {}
 
+    func prepareAuthorization() async -> Bool {
+        await notificationsAreAuthorized()
+    }
+
     func beginSession(_ sessionID: UUID) {
         invalidateInMemorySession(clearMarker: false)
         activeSessionID = sessionID

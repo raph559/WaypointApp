@@ -17,6 +17,7 @@ final class CellularPathMonitor: @unchecked Sendable {
     private var cellularIsSatisfied = false
     private var wifiIsSatisfied = false
     private var cellularOnlySince: Date?
+    private var offlineSince: Date?
 
     func isCellularOnly(stableFor duration: TimeInterval = 0) -> Bool {
         lock.lock()
@@ -33,13 +34,19 @@ final class CellularPathMonitor: @unchecked Sendable {
         return Date().timeIntervalSince(cellularOnlySince) >= duration
     }
 
-    var hasObservedOfflineBaseline: Bool {
+    func isOffline(stableFor duration: TimeInterval = 0) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        return hasCellularSample &&
-            hasWiFiSample &&
-            !cellularIsSatisfied &&
-            !wifiIsSatisfied
+
+        guard hasCellularSample,
+              hasWiFiSample,
+              !cellularIsSatisfied,
+              !wifiIsSatisfied,
+              let offlineSince else {
+            return false
+        }
+
+        return Date().timeIntervalSince(offlineSince) >= duration
     }
 
     private init() {
@@ -77,6 +84,17 @@ final class CellularPathMonitor: @unchecked Sendable {
             }
         } else {
             cellularOnlySince = nil
+        }
+
+        if hasCellularSample &&
+            hasWiFiSample &&
+            !cellularIsSatisfied &&
+            !wifiIsSatisfied {
+            if offlineSince == nil {
+                offlineSince = Date()
+            }
+        } else {
+            offlineSince = nil
         }
     }
 }

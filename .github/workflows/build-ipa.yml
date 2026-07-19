@@ -118,20 +118,22 @@ jobs:
             "" \
             "### Highlights" \
             "" \
+            "- Guided Start on mobile data with automatic support-file caching, LocalDevVPN launch, device preparation, and retained-session verification" \
+            "- Only two guided system actions remain: turn Airplane Mode on, then off, while keeping Wi-Fi off" \
+            "- One-time SideStore or Files pairing import directly inside the guide" \
             "- Native MapKit map with live place and address autocomplete" \
             "- Tap or drag the pin, then start or move the simulated location" \
             "- Visual and haptic Start, Move, Stop, and connection-loss feedback" \
             "- Optional background keepalive and cautious watchdog notifications" \
-            "- Experimental no-Wi-Fi cellular handoff with a retained-session check" \
-            "- SideStore pairing import and on-device developer-image preparation" \
             "" \
             "### Install" \
             "" \
             "1. Download $asset below." \
             "2. Import it into SideStore." \
-            "3. Connect LocalDevVPN, import the pairing file, and tap Prepare device." \
+            "3. Turn Wi-Fi off, leave mobile data on, choose a location, and tap Start on mobile data." \
+            "4. Follow Waypoint's prompts to turn Airplane Mode on, then off." \
             "" \
-            "The cellular handoff is experimental: iOS may close the developer session when 4G/5G returns. Waypoint reports failure instead of claiming the spoof is still active." \
+            "The retained-session mechanism was confirmed in Waypoint 0.3.0 on a physical iPhone running iOS 26. The new 0.4.0 guided wrapper still needs physical-device retesting and remains experimental." \
             "" \
             "Waypoint uses Apple's software-simulated developer location. Destination apps can detect or reject it." \
             "" \
@@ -140,6 +142,10 @@ jobs:
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
+            gh release edit "$tag" \
+              --title "Waypoint $version" \
+              --notes-file "$notes" \
+              --latest
           else
             gh release create "$tag" "$asset" \
               --target "$GITHUB_SHA" \
