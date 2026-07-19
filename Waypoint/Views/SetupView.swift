@@ -105,6 +105,23 @@ struct SetupView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Cellular without Wi-Fi — experimental") {
+                Label("Retained-session handoff", systemImage: "antenna.radiowaves.left.and.right")
+                    .font(.subheadline.weight(.medium))
+
+                Text("iOS rejects a new developer connection while cellular is the only active network. Waypoint can test whether a session opened with cellular temporarily disabled survives when 4G/5G returns.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Text("Connect LocalDevVPN over cellular, enable Airplane Mode with Wi-Fi off, then prepare and start the spoof. On the map, tap “Switch to cellular (experimental)” and follow the guarded handoff prompt.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Text("Complete normal setup once while online so the developer-image files are already cached. This path is not guaranteed: iOS may close the retained session when cellular returns.")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
+
             Section {
                 Button("Done") { dismiss() }
                     .disabled(!model.isReady)

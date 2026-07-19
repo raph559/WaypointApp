@@ -88,6 +88,17 @@ final class DeviceBridge: @unchecked Sendable {
         }
     }
 
+    /// Waits until every previously submitted bridge operation has finished.
+    /// The cellular handoff uses this fence before changing network state so a
+    /// periodic location write cannot collide with the transition.
+    func waitUntilIdle() async {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume()
+            }
+        }
+    }
+
     private func perform<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {

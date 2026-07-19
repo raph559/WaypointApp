@@ -16,6 +16,8 @@ struct MapSpoofView: View {
     @State private var searchOperationID: UUID?
     @State private var displayedEvent: SimulationEvent?
     @State private var eventDismissTask: Task<Void, Never>?
+    @State private var isCellularHandoffConfirmationPresented = false
+    @State private var isKeepaliveResumeConfirmationPresented = false
 
     private static let storedCoordinateKey = "selectedCoordinate"
     private static let defaultCoordinate = SelectedCoordinate(latitude: 48.8566, longitude: 2.3522)
@@ -40,6 +42,15 @@ struct MapSpoofView: View {
             }
             .onChange(of: model.simulationEvent) { _, event in
                 show(event)
+            }
+            .onChange(of: model.isCellularHandoffInProgress) { _, isInProgress in
+                guard isInProgress else { return }
+                searchTask?.cancel()
+                searchOperationID = nil
+                isSearching = false
+                isSearchPresented = false
+                placeSearch.cancelAll()
+                placeSearch.clearSuggestions()
             }
             .onDisappear {
                 searchTask?.cancel()
@@ -117,6 +128,30 @@ struct MapSpoofView: View {
                 placeSearch.clearSuggestions()
             }
         }
+        .confirmationDialog(
+            "Switch this spoof to cellular?",
+            isPresented: $isCellularHandoffConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Prepare cellular handoff") {
+                model.armCellularHandoff()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("LocalDevVPN must still be connected, Airplane Mode must be ON, and Wi-Fi must be OFF. After tapping Prepare, wait until Waypoint says “Turn Airplane Mode off now”, then switch it off in Control Center while keeping Wi-Fi off.")
+        }
+        .confirmationDialog(
+            "Resume location updates?",
+            isPresented: $isKeepaliveResumeConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Resume keepalive") {
+                model.resumeSimulationAfterHandoffFailure()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Before resuming, enable Airplane Mode again with Wi-Fi off, or connect to a Wi-Fi network. Resuming while cellular is the only active interface can end the developer session.")
+        }
     }
 
     private var searchSuggestions: some View {
@@ -155,6 +190,7 @@ struct MapSpoofView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .disabled(model.isCellularHandoffInProgress)
             }
 
             if placeSearch.completionFailed,
@@ -253,7 +289,7 @@ struct MapSpoofView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(model.isChangingSimulation)
+                .disabled(model.isChangingSimulation || model.areLocationWritesPausedForCellularHandoff)
 
                 if model.simulatedCoordinate != nil {
                     Button(role: .destructive) {
@@ -268,6 +304,8 @@ struct MapSpoofView: View {
             }
 
             if model.simulatedCoordinate != nil {
+                cellularHandoffControl
+
                 Text("Background keepalive is \(model.backgroundKeepAliveEnabled ? "on" : "off"). Stop restores the device's real GPS.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -278,6 +316,93 @@ struct MapSpoofView: View {
         .padding(.top, 14)
         .padding(.bottom, 10)
         .background(.ultraThinMaterial)
+    }
+
+    @ViewBuilder
+    private var cellularHandoffControl: some View {
+        switch model.cellularHandoffState {
+        case .idle:
+            Button {
+                isCellularHandoffConfirmationPresented = true
+            } label: {
+                Label("Switch to cellular (experimental)", systemImage: "antenna.radiowaves.left.and.right")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(model.isChangingSimulation)
+
+        case .arming:
+            HStack(spacing: 12) {
+                ProgressView()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Preparing the retained session…")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Keep Airplane Mode on and Wi-Fi off")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Button("Cancel") {
+                    model.cancelCellularHandoff()
+                }
+                .buttonStyle(.borderless)
+            }
+
+        case .waiting(let secondsRemaining):
+            HStack(spacing: 12) {
+                ProgressView()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Turn Airplane Mode off now")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Keep Wi-Fi off • up to \(secondsRemaining)s")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Button("Cancel") {
+                    model.cancelCellularHandoff()
+                }
+                .buttonStyle(.borderless)
+            }
+
+        case .verifying:
+            HStack(spacing: 12) {
+                ProgressView()
+                Text("Checking the retained developer session…")
+                    .font(.subheadline.weight(.medium))
+                Spacer(minLength: 0)
+            }
+
+        case .succeeded:
+            Label("Cellular-only handoff passed", systemImage: "checkmark.circle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.green)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 8) {
+                Label(message, systemImage: "antenna.radiowaves.left.and.right.slash")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+
+                Button("Try cellular handoff again") {
+                    isCellularHandoffConfirmationPresented = true
+                }
+                .buttonStyle(.bordered)
+
+                Button("Resume normal keepalive") {
+                    isKeepaliveResumeConfirmationPresented = true
+                }
+                .buttonStyle(.bordered)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var primaryButtonTitle: String {
@@ -337,6 +462,7 @@ struct MapSpoofView: View {
         switch kind {
         case .started: return "location.fill"
         case .moved: return "mappin.and.ellipse"
+        case .cellularReady: return "checkmark.circle.fill"
         case .stopped: return "location.slash.fill"
         case .connectionLost: return "exclamationmark.triangle.fill"
         }
@@ -346,6 +472,7 @@ struct MapSpoofView: View {
         switch kind {
         case .started: return .green
         case .moved: return .blue
+        case .cellularReady: return .green
         case .stopped: return .gray
         case .connectionLost: return .red
         }
@@ -369,6 +496,7 @@ struct MapSpoofView: View {
     }
 
     private func searchSubmittedText() {
+        guard !model.isCellularHandoffInProgress else { return }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return }
 
@@ -378,6 +506,7 @@ struct MapSpoofView: View {
     }
 
     private func selectSuggestion(_ suggestion: PlaceSuggestion) {
+        guard !model.isCellularHandoffInProgress else { return }
         let region = visibleRegion
         beginSearch(fallbackName: suggestion.title) {
             try await placeSearch.resolve(suggestion, region: region)
@@ -432,6 +561,7 @@ struct MapSpoofView: View {
     }
 
     private func select(_ coordinate: CLLocationCoordinate2D) {
+        guard !model.isCellularHandoffInProgress else { return }
         let value = SelectedCoordinate(coordinate)
         guard value.isValid else { return }
         selection = value

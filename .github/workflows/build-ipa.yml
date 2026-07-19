@@ -114,7 +114,7 @@ jobs:
           printf '%s\n' \
             "## Waypoint $version" \
             "" \
-            "The first public on-device iOS 26 build of Waypoint." \
+            "The current unsigned iOS 26 build of Waypoint for SideStore." \
             "" \
             "### Highlights" \
             "" \
@@ -122,6 +122,7 @@ jobs:
             "- Tap or drag the pin, then start or move the simulated location" \
             "- Visual and haptic Start, Move, Stop, and connection-loss feedback" \
             "- Optional background keepalive and cautious watchdog notifications" \
+            "- Experimental no-Wi-Fi cellular handoff with a retained-session check" \
             "- SideStore pairing import and on-device developer-image preparation" \
             "" \
             "### Install" \
@@ -129,6 +130,8 @@ jobs:
             "1. Download $asset below." \
             "2. Import it into SideStore." \
             "3. Connect LocalDevVPN, import the pairing file, and tap Prepare device." \
+            "" \
+            "The cellular handoff is experimental: iOS may close the developer session when 4G/5G returns. Waypoint reports failure instead of claiming the spoof is still active." \
             "" \
             "Waypoint uses Apple's software-simulated developer location. Destination apps can detect or reject it." \
             "" \

@@ -30,10 +30,10 @@
       src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white"
       alt="SwiftUI"
     >
-    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.2.0">
+    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.3.0">
       <img
-        src="https://img.shields.io/badge/version-0.2.0-00B7C7"
-        alt="Version 0.2.0"
+        src="https://img.shields.io/badge/version-0.3.0-00B7C7"
+        alt="Version 0.3.0"
       >
     </a>
     <a href="LICENSE">
@@ -45,7 +45,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.2.0-unsigned.ipa">
+    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.3.0-unsigned.ipa">
       <img
         src="https://img.shields.io/badge/Download-Waypoint%20IPA-2088FF?style=for-the-badge&logo=apple&logoColor=white"
         alt="Download the latest Waypoint IPA"
@@ -80,6 +80,7 @@ happens entirely on the iPhone.
 | ✅ | **Clear status feedback** | Shows animated Start, Move, Stop, and connection-loss states with haptics |
 | 🔔 | **Connection warnings** | Warns when Waypoint can no longer confirm the simulation heartbeat |
 | 🌙 | **Optional background keepalive** | Improves reliability while switching between apps |
+| 📡 | **Experimental cellular handoff** | Tests whether an Airplane-Mode session survives when 4G/5G returns, with no Wi-Fi network |
 | 🔐 | **Protected local pairing data** | Stores the pairing record on-device and excludes it from backups |
 
 > [!IMPORTANT]
@@ -95,6 +96,8 @@ The currently validated setup requires:
 - [SideStore](https://sidestore.io/) installed and able to refresh apps
 - LocalDevVPN installed and connected
 - A valid <code>.mobiledevicepairing</code> file for the iPhone
+- A Wi-Fi connection for the normal developer-session path, or the explicitly
+  experimental Airplane-Mode bootstrap described below
 - Internet access during the first developer-image download and for MapKit
   search
 
@@ -110,12 +113,12 @@ Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
 ID during installation.
 
 1. Download
-   [<code>Waypoint-iOS26-v0.2.0-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.2.0-unsigned.ipa).
+   [<code>Waypoint-iOS26-v0.3.0-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.3.0-unsigned.ipa).
 2. Open or share the IPA with SideStore.
 3. Install it as a normal SideStore app.
 
 Release notes and the SHA-256 checksum are available on the
-[Waypoint 0.2.0 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.2.0).
+[Waypoint 0.3.0 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.3.0).
 
 ## First-time setup
 
@@ -155,6 +158,39 @@ watchdog can notify you that the simulated location can no longer be confirmed.
 Notifications are optional but required for these alerts. The wording is
 intentionally cautious: after iOS suspends or terminates the app, Waypoint
 cannot directly verify the current GPS state.
+
+### Experimental: cellular with no Wi-Fi network
+
+iOS normally rejects a **new** developer-service connection when cellular is
+the only active physical interface. Waypoint 0.3.0 includes an experimental
+retained-session handoff that avoids reconnecting and checks whether an already
+open location session survives when 4G/5G returns.
+
+1. Complete normal setup once while online so the developer-image files are
+   cached, and choose the destination on the map.
+2. With Wi-Fi off and cellular on, connect LocalDevVPN.
+3. Enable Airplane Mode, leaving Wi-Fi off, then return to Waypoint.
+4. Prepare the device and start the spoof.
+5. Tap **Switch to cellular (experimental)**, then wait for Waypoint to finish
+   preparing the retained session.
+6. When Waypoint says **Turn Airplane Mode off now**, disable Airplane Mode in
+   Control Center and keep Wi-Fi off.
+7. Leave Waypoint running while it waits up to 30 seconds for a stable cellular
+   path and performs three checks through the original location client.
+
+A green **Cellular-only handoff passed** banner means the phone remained off
+Wi-Fi and the retained session answered all checks, so Waypoint resumed its
+keepalive. If iOS closes the session,
+Waypoint reports the failure and does not claim that the spoof is still active.
+If the network check times out or is cancelled after the transition starts,
+Waypoint pauses location writes. Return to Airplane Mode (or a normal Wi-Fi
+connection) before choosing **Resume normal keepalive**.
+
+> [!WARNING]
+> This is a device-dependent experiment, not guaranteed cellular support. A
+> fresh spoof still cannot be started while 4G/5G is the only active interface,
+> and the session must be bootstrapped again after an app kill, VPN restart, or
+> iPhone reboot.
 
 ## Privacy and pairing-file safety
 
@@ -212,6 +248,9 @@ server.
 - Force-quitting Waypoint ends its keepalive.
 - VPN interruption, memory pressure, background suspension, or SideStore
   profile expiry can stop the DVT connection.
+- Apple normally rejects fresh DVT connections on cellular-only paths. The
+  no-Wi-Fi cellular handoff is experimental and may fail if iOS closes the
+  already-open session when cellular returns.
 - A watchdog notification means Waypoint lost confirmation; it does not prove
   exactly when iOS restored the real location.
 - The developer image generally needs to be prepared again after an iPhone
@@ -278,12 +317,15 @@ Place the archived <code>Waypoint.app</code> inside a top-level
 
 ## Project status
 
-Waypoint **0.2.0** has been:
+Waypoint **0.3.0** keeps the physically validated 0.2.0 spoofing flow and adds
+the experimental retained-session cellular handoff.
 
-- Archived successfully with Xcode 26.0.1
-- Packaged as an unsigned arm64 IPA
-- Installed through SideStore
-- Validated on a physical iPhone running iOS 26
+- The standard Start/Move/Stop flow was installed through SideStore and
+  validated on a physical iPhone running iOS 26.
+- Every release is archived with Xcode 26 and packaged as an unsigned arm64 IPA
+  by GitHub Actions.
+- The no-Wi-Fi cellular handoff still requires physical-device validation and
+  remains clearly marked experimental in the app.
 
 For a new iOS release or destination app, test pairing import, device
 preparation, Start/Move/Stop, backgrounding, lock/unlock, VPN interruption,
