@@ -1,0 +1,68 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0.1"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Fetch location-enabled idevice binary
+        run: bash scripts/fetch-idevice.sh
+
+      - name: Verify location-simulation symbols
+        run: |
+          LC_ALL=C grep -a -q '_location_simulation_new' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_set' Vendor/idevice/libidevice_ffi.a
+          LC_ALL=C grep -a -q '_location_simulation_clear' Vendor/idevice/libidevice_ffi.a
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Archive without signing
+        run: |
+          xcodebuild clean archive \
+            -project Waypoint.xcodeproj \
+            -scheme Waypoint \
+            -configuration Release \
+            -archivePath build/Waypoint.xcarchive \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY='' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Package IPA
+        run: |
+          test -d build/Waypoint.xcarchive/Products/Applications/Waypoint.app
+          rm -rf Payload
+          mkdir -p Payload
+          ditto build/Waypoint.xcarchive/Products/Applications/Waypoint.app Payload/Waypoint.app
+          ditto -c -k --sequesterRsrc --keepParent Payload Waypoint-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Waypoint-unsigned-ipa
+          path: Waypoint-unsigned.ipa
+          retention-days: 30
