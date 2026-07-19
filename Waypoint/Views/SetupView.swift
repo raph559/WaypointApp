@@ -66,30 +66,6 @@ struct SetupView: View {
                         Label("Install LocalDevVPN", systemImage: "arrow.down.app.fill")
                     }
                 }
-
-                Button {
-                    Task { await model.prepareDevice() }
-                } label: {
-                    HStack {
-                        Label(
-                            model.isReady ? "Check Again" : "Prepare iPhone",
-                            systemImage: model.isReady ? "checkmark.shield" : "wrench.and.screwdriver"
-                        )
-                        Spacer()
-                        if model.isPreparing { ProgressView() }
-                    }
-                }
-                .disabled(
-                    model.isPreparing ||
-                    !model.pairingState.isReady ||
-                    !model.isLocalDevVPNInstalled
-                )
-
-                if model.isPreparing, !model.preparationMessage.isEmpty {
-                    Text(model.preparationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
             } header: {
                 Text("Device Setup")
             } footer: {
@@ -111,12 +87,18 @@ struct SetupView: View {
                         Label("Open Notification Settings", systemImage: "bell.badge")
                     }
                 }
+            } header: {
+                Text("Alerts")
+            } footer: {
+                Text("Warns you if Waypoint can no longer confirm the spoof.")
+            }
 
+            Section {
                 Toggle("Keep Spoof Active", isOn: $model.backgroundKeepAliveEnabled)
             } header: {
-                Text("Reliability")
+                Text("Background")
             } footer: {
-                Text("Alerts warn you if Waypoint can no longer confirm the spoof.")
+                Text("Helps maintain the spoof when you switch apps. Uses more battery.")
             }
 
             Section {
