@@ -118,6 +118,8 @@ jobs:
             "" \
             "### Highlights" \
             "" \
+            "- First stable Waypoint 1.0 release with a streamlined single Start action" \
+            "- Missing LocalDevVPN is detected before setup, with an App Store install button and automatic continuation" \
             "- Explicit Notify If Spoof Stops switch with native iOS permission and Settings handling" \
             "- Connection-aware Start button: Start spoofing on Wi-Fi and Start on mobile data on 4G/5G" \
             "- Compact Settings screen with only status, device setup, reliability, and troubleshooting controls" \

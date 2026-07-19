@@ -14,6 +14,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var simulationEvent: SimulationEvent?
     @Published private(set) var cellularHandoffState: CellularHandoffState = .idle
     @Published private(set) var cellularLaunchState: CellularLaunchState = .idle
+    @Published private(set) var isLocalDevVPNInstalled = false
     @Published private(set) var disconnectAlertsEnabled = false
     @Published private(set) var disconnectAlertsDenied = false
     @Published private(set) var isUpdatingDisconnectAlerts = false
@@ -105,6 +106,7 @@ final class AppModel: ObservableObject {
     }
 
     func refreshLocalState() {
+        refreshLocalDevVPNAvailability()
         refreshDisconnectAlertSettings()
         pairingState = PairingFileStore.exists ? .ready : .required
 
@@ -179,8 +181,42 @@ final class AppModel: ObservableObject {
         beginGuidedLaunch(at: coordinate, route: route)
     }
 
-    func beginCellularLaunch(at coordinate: SelectedCoordinate) {
-        beginGuidedLaunch(at: coordinate, route: .cellular)
+    func checkLocalDevVPNInstallation() {
+        continueGuidedLaunchAfterLocalDevVPNIfNeeded()
+    }
+
+    private func refreshLocalDevVPNAvailability() {
+        guard let url = localDevVPNEnableURL() else {
+            isLocalDevVPNInstalled = false
+            return
+        }
+        isLocalDevVPNInstalled = UIApplication.shared.canOpenURL(url)
+    }
+
+    private func localDevVPNEnableURL() -> URL? {
+        var components = URLComponents()
+        components.scheme = "localdevvpn"
+        components.host = "enable"
+        components.queryItems = [
+            URLQueryItem(name: "scheme", value: Self.pairingCallbackScheme)
+        ]
+        return components.url
+    }
+
+    private func continueGuidedLaunchAfterLocalDevVPNIfNeeded() {
+        guard let operationID = cellularLaunchOperationID,
+              case .needsLocalDevVPN = cellularLaunchState else {
+            return
+        }
+
+        refreshLocalDevVPNAvailability()
+        guard isLocalDevVPNInstalled else { return }
+
+        if PairingFileStore.exists {
+            startCellularPreflight(operationID: operationID)
+        } else {
+            cellularLaunchState = .needsPairing
+        }
     }
 
     private func refreshDisconnectAlertSettings() {
@@ -227,16 +263,23 @@ final class AppModel: ObservableObject {
         }
 
         let operationID = UUID()
+        refreshLocalDevVPNAvailability()
         cellularLaunchOperationID = operationID
         pendingCellularCoordinate = coordinate
         pendingLaunchRoute = route
-        cellularLaunchState = PairingFileStore.exists ? .cachingSupportFiles("Checking one-time files…") : .needsPairing
+        if !isLocalDevVPNInstalled {
+            cellularLaunchState = .needsLocalDevVPN
+        } else {
+            cellularLaunchState = PairingFileStore.exists
+                ? .cachingSupportFiles("Checking one-time files…")
+                : .needsPairing
+        }
         isCellularStartPresented = true
         isSetupPresented = false
         didLeaveForLocalDevVPN = false
         _ = CellularPathMonitor.shared
 
-        if PairingFileStore.exists {
+        if isLocalDevVPNInstalled, PairingFileStore.exists {
             startCellularPreflight(operationID: operationID)
         }
     }
@@ -533,7 +576,12 @@ final class AppModel: ObservableObject {
 
     func applicationBecameActive() {
         isApplicationActive = true
+        refreshLocalDevVPNAvailability()
         refreshDisconnectAlertSettings()
+        if isLocalDevVPNInstalled,
+           case .needsLocalDevVPN = cellularLaunchState {
+            continueGuidedLaunchAfterLocalDevVPNIfNeeded()
+        }
         if case .openingLocalDevVPN = cellularLaunchState,
            didLeaveForLocalDevVPN {
             localDevVPNDidReturn()
@@ -810,6 +858,12 @@ final class AppModel: ObservableObject {
 
     private func startCellularPreflight(operationID: UUID) {
         cellularLaunchTask?.cancel()
+        cellularLaunchTask = nil
+        refreshLocalDevVPNAvailability()
+        guard isLocalDevVPNInstalled else {
+            cellularLaunchState = .needsLocalDevVPN
+            return
+        }
         cancelCellularHandoffWork(resetState: simulatedCoordinate == nil)
         cellularLaunchState = .cachingSupportFiles("Checking one-time files…")
 
@@ -835,10 +889,14 @@ final class AppModel: ObservableObject {
                 guard cellularLaunchOperationID == operationID else { return }
                 cellularLaunchTask = nil
                 if !didOpen {
-                    failCellularLaunch(
-                        "LocalDevVPN could not be opened. Install or update LocalDevVPN, then try again.",
-                        operationID: operationID
-                    )
+                    if isLocalDevVPNInstalled {
+                        failCellularLaunch(
+                            "LocalDevVPN could not be opened. Update it from the App Store, then try again.",
+                            operationID: operationID
+                        )
+                    } else {
+                        cellularLaunchState = .needsLocalDevVPN
+                    }
                 }
             } catch is CancellationError {
                 return
@@ -855,15 +913,9 @@ final class AppModel: ObservableObject {
     }
 
     private func openLocalDevVPN() async -> Bool {
-        var components = URLComponents()
-        components.scheme = "localdevvpn"
-        components.host = "enable"
-        components.queryItems = [
-            URLQueryItem(name: "scheme", value: Self.pairingCallbackScheme)
-        ]
-
-        guard let url = components.url,
+        guard let url = localDevVPNEnableURL(),
               UIApplication.shared.canOpenURL(url) else {
+            isLocalDevVPNInstalled = false
             return false
         }
 

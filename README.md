@@ -30,10 +30,10 @@
       src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white"
       alt="SwiftUI"
     >
-    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.4.2">
+    <a href="https://github.com/raph559/WaypointApp/releases/tag/v1.0.0">
       <img
-        src="https://img.shields.io/badge/version-0.4.2-00B7C7"
-        alt="Version 0.4.2"
+        src="https://img.shields.io/badge/version-1.0.0-00B7C7"
+        alt="Version 1.0.0"
       >
     </a>
     <a href="LICENSE">
@@ -45,7 +45,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.2-unsigned.ipa">
+    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v1.0.0-unsigned.ipa">
       <img
         src="https://img.shields.io/badge/Download-Waypoint%20IPA-2088FF?style=for-the-badge&logo=apple&logoColor=white"
         alt="Download the latest Waypoint IPA"
@@ -83,6 +83,7 @@ preparation automatically.
 | 🔔 | **Connection warnings** | Warns when Waypoint can no longer confirm the simulation heartbeat |
 | 🌙 | **Optional background keepalive** | Improves reliability while switching between apps |
 | 🔄 | **Connection-aware start** | Uses a normal start on Wi-Fi and shows the guided cellular flow only on mobile data |
+| 🧩 | **Guided dependency setup** | Detects a missing LocalDevVPN, links to the App Store, and continues automatically after installation |
 | 📡 | **Guided mobile-data start (experimental)** | Opens LocalDevVPN, prepares the session, and guides the two Airplane Mode changes while Wi-Fi stays off |
 | 🔐 | **Protected local pairing data** | Stores the pairing record on-device and excludes it from backups |
 
@@ -97,7 +98,7 @@ You'll need:
 
 - An iPhone running **iOS 26** with **Developer Mode** enabled
 - [SideStore](https://sidestore.io/) installed and able to refresh apps
-- [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN) installed, with its
+- [LocalDevVPN](https://apps.apple.com/app/id6755608044) installed, with its
   one-time VPN permission accepted
 - A valid <code>.mobiledevicepairing</code> file for the iPhone
 - Mobile data enabled at the beginning of a guided cellular start, with Wi-Fi
@@ -116,17 +117,18 @@ Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
 ID during installation.
 
 1. Download
-   [<code>Waypoint-iOS26-v0.4.2-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.2-unsigned.ipa).
+   [<code>Waypoint-iOS26-v1.0.0-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v1.0.0-unsigned.ipa).
 2. Open or share the IPA with SideStore.
 3. Install it as a normal SideStore app.
 
 Release notes and the SHA-256 checksum are available on the
-[Waypoint 0.4.2 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.4.2).
+[Waypoint 1.0.0 release page](https://github.com/raph559/WaypointApp/releases/tag/v1.0.0).
 
 ## First-time setup
 
 1. Enable **Developer Mode** in iOS Settings and restart when prompted.
-2. Install Waypoint through SideStore and install LocalDevVPN. Complete
+2. Install Waypoint through SideStore. If LocalDevVPN is missing, Waypoint links
+   directly to its App Store page and continues setup when you return. Complete
    LocalDevVPN's one-time VPN permission if iOS asks.
 3. Turn Wi-Fi off, leave mobile data on, and choose a location in Waypoint.
 4. Tap **Start on mobile data**.
@@ -140,8 +142,8 @@ For later starts, only choose a location, tap **Start on mobile data**, and
 follow the two Airplane Mode prompts. Waypoint handles the remaining preparation
 automatically.
 
-Manual pairing, preparation, and starts on the current connection remain
-available under **Settings** and the map's **…** menu for troubleshooting.
+Manual pairing and preparation remain available under **Settings** for
+troubleshooting.
 
 When finished, press **Stop** before disconnecting LocalDevVPN so Waypoint can
 clear the simulated location. If the stop cannot be confirmed, reconnect
@@ -317,9 +319,9 @@ Place the archived <code>Waypoint.app</code> inside a top-level
 
 ## Project status
 
-Waypoint **0.4.2** adds an explicit disconnect-alert switch with native iOS
-permission handling. It keeps the connection-aware Start button and compact
-Settings screen introduced in 0.4.1.
+Waypoint **1.0.0** is the first stable, streamlined release. It combines the
+connection-aware Start button, compact Settings, explicit disconnect alerts,
+and a guided LocalDevVPN installation step with automatic continuation.
 
 - The underlying no-Wi-Fi cellular handoff in Waypoint 0.3.0 was installed
   through SideStore and confirmed on a physical iPhone running iOS 26.

@@ -8,6 +8,8 @@ struct SetupView: View {
     @State private var isChoosingPairingFile = false
     @State private var isSideStoreConfirmationPresented = false
 
+    private let localDevVPNAppStoreURL = URL(string: "https://apps.apple.com/app/id6755608044")!
+
     private let pairingTypes: [UTType] = [
         UTType(filenameExtension: "mobiledevicepairing", conformingTo: .data)!,
         UTType(filenameExtension: "mobiledevicepair", conformingTo: .data)!,
@@ -27,7 +29,7 @@ struct SetupView: View {
                 setupRow(
                     title: "LocalDevVPN",
                     detail: tunnelDetail,
-                    state: model.tunnelState
+                    state: localDevVPNState
                 )
                 setupRow(
                     title: "Developer Support",
@@ -59,6 +61,12 @@ struct SetupView: View {
                 }
                 .disabled(model.isPreparing || model.simulatedCoordinate != nil)
 
+                if !model.isLocalDevVPNInstalled {
+                    Link(destination: localDevVPNAppStoreURL) {
+                        Label("Install LocalDevVPN", systemImage: "arrow.down.app.fill")
+                    }
+                }
+
                 Button {
                     Task { await model.prepareDevice() }
                 } label: {
@@ -71,7 +79,11 @@ struct SetupView: View {
                         if model.isPreparing { ProgressView() }
                     }
                 }
-                .disabled(model.isPreparing || !model.pairingState.isReady)
+                .disabled(
+                    model.isPreparing ||
+                    !model.pairingState.isReady ||
+                    !model.isLocalDevVPNInstalled
+                )
 
                 if model.isPreparing, !model.preparationMessage.isEmpty {
                     Text(model.preparationMessage)
@@ -150,7 +162,11 @@ struct SetupView: View {
     }
 
     private var tunnelDetail: String {
-        detail(for: model.tunnelState, ready: "Connected", required: "Not checked")
+        detail(for: localDevVPNState, ready: "Connected", required: "Ready to connect")
+    }
+
+    private var localDevVPNState: SetupCheckState {
+        model.isLocalDevVPNInstalled ? model.tunnelState : .failed("Not installed")
     }
 
     private var developerImageDetail: String {

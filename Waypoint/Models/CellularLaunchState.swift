@@ -2,6 +2,7 @@ import Foundation
 
 enum CellularLaunchState: Equatable {
     case idle
+    case needsLocalDevVPN
     case needsPairing
     case cachingSupportFiles(String)
     case openingLocalDevVPN
@@ -15,7 +16,7 @@ enum CellularLaunchState: Equatable {
 
     var canCancelSafely: Bool {
         switch self {
-        case .needsPairing, .cachingSupportFiles, .openingLocalDevVPN,
+        case .needsLocalDevVPN, .needsPairing, .cachingSupportFiles, .openingLocalDevVPN,
              .settlingLocalDevVPN, .waitingForAirplaneMode, .preparingDevice:
             return true
         case .idle, .startingSpoof, .handoff, .succeeded, .failed:

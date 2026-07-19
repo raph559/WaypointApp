@@ -10,6 +10,8 @@ struct CellularStartView: View {
     @State private var isSideStoreConfirmationPresented = false
     @State private var successDismissTask: Task<Void, Never>?
 
+    private let localDevVPNAppStoreURL = URL(string: "https://apps.apple.com/app/id6755608044")!
+
     private let pairingTypes: [UTType] = [
         UTType(filenameExtension: "mobiledevicepairing", conformingTo: .data)!,
         UTType(filenameExtension: "mobiledevicepair", conformingTo: .data)!,
@@ -113,13 +115,32 @@ struct CellularStartView: View {
         }
         .animation(.easeInOut(duration: 0.24), value: progressIndex)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Cellular start progress")
+        .accessibilityLabel("Start progress")
         .accessibilityValue("Step \(progressIndex + 1) of 3")
     }
 
     @ViewBuilder
     private var actions: some View {
         switch model.cellularLaunchState {
+        case .needsLocalDevVPN:
+            VStack(spacing: 11) {
+                Link(destination: localDevVPNAppStoreURL) {
+                    Label("Install LocalDevVPN", systemImage: "arrow.down.app.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+
+                Button {
+                    model.checkLocalDevVPNInstallation()
+                } label: {
+                    Label("Check Again", systemImage: "arrow.clockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
+
         case .needsPairing:
             VStack(spacing: 11) {
                 Button {
@@ -175,8 +196,8 @@ struct CellularStartView: View {
                     .controlSize(.large)
                 }
 
-                Link(destination: URL(string: "https://github.com/jkcoxson/LocalDevVPN")!) {
-                    Label("LocalDevVPN Help", systemImage: "questionmark.circle")
+                Link(destination: localDevVPNAppStoreURL) {
+                    Label("View LocalDevVPN in App Store", systemImage: "arrow.up.forward.app")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -196,7 +217,7 @@ struct CellularStartView: View {
                     Button {
                         model.setDisconnectAlertsEnabled(true)
                     } label: {
-                        Label("Enable Stop Alerts", systemImage: "bell.badge")
+                        Label("Enable Disconnect Alerts", systemImage: "bell.badge")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -241,6 +262,15 @@ struct CellularStartView: View {
                 title: "Getting Ready",
                 message: "Waypoint is preparing the start guide.",
                 showsActivity: true
+            )
+
+        case .needsLocalDevVPN:
+            return StepPresentation(
+                symbol: "network.badge.shield.half.filled",
+                color: .blue,
+                title: "Install LocalDevVPN",
+                message: "Waypoint needs LocalDevVPN to connect to this iPhone. Install it, then return—setup will continue automatically.",
+                showsActivity: false
             )
 
         case .needsPairing:
@@ -392,7 +422,7 @@ struct CellularStartView: View {
 
     private var progressIndex: Int {
         switch model.cellularLaunchState {
-        case .idle, .needsPairing, .cachingSupportFiles, .openingLocalDevVPN,
+        case .idle, .needsLocalDevVPN, .needsPairing, .cachingSupportFiles, .openingLocalDevVPN,
              .settlingLocalDevVPN:
             return 0
         case .waitingForAirplaneMode, .preparingDevice, .startingSpoof:

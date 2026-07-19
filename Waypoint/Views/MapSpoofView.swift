@@ -311,37 +311,6 @@ struct MapSpoofView: View {
                     model.isCellularLaunchRunning
                 )
 
-                if model.simulatedCoordinate == nil {
-                    Menu {
-                        if pathMonitor.activeConnection == .wifi {
-                            Button {
-                                model.beginCellularLaunch(at: selection)
-                            } label: {
-                                Label("Use mobile-data guide", systemImage: "antenna.radiowaves.left.and.right")
-                            }
-                        } else if usesMobileDataGuide {
-                            Button {
-                                Task { await model.startSimulation(at: selection) }
-                            } label: {
-                                Label("Start on current connection", systemImage: "network")
-                            }
-                        }
-
-                        Button {
-                            model.isSetupPresented = true
-                        } label: {
-                            Label("Settings", systemImage: "gearshape")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .frame(width: 22)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .accessibilityLabel("More start options")
-                    .disabled(model.isPreparing || model.isCellularLaunchRunning)
-                }
-
                 if model.simulatedCoordinate != nil {
                     Button(role: .destructive) {
                         Task { await model.stopSimulation() }
@@ -482,10 +451,6 @@ struct MapSpoofView: View {
         case .offline:
             return "wifi.slash"
         }
-    }
-
-    private var usesMobileDataGuide: Bool {
-        pathMonitor.activeConnection == .cellular
     }
 
     private var hasUsableConnection: Bool {
