@@ -1,0 +1,90 @@
+name: Compatibility report
+description: Share a verified iPhone, iOS, network, or destination-app result
+title: "[Compatibility]: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Compatibility reports help document device-dependent behavior. Use Waypoint only for development and testing, and follow the rules of apps and services you test.
+
+        **Never attach or paste a `.mobiledevicepairing` file, credentials, account information, device tokens, or unredacted logs.**
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I have removed pairing records, credentials, account details, UDIDs, and other sensitive data.
+          required: true
+
+  - type: input
+    id: waypoint-version
+    attributes:
+      label: Waypoint version
+      placeholder: "1.0.1"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: iPhone model and exact iOS version
+      placeholder: "iPhone 16 Pro, iOS 26.0.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection tested
+      options:
+        - Wi-Fi
+        - Cellular data with Wi-Fi off
+        - Both Wi-Fi and cellular data
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - Start, move, and stop all worked
+        - Start worked with limitations
+        - Setup or start failed
+        - The connection stopped unexpectedly
+        - Destination app rejected or ignored the simulated location
+    validations:
+      required: true
+
+  - type: input
+    id: destination
+    attributes:
+      label: Destination app and version
+      description: Optional. Do not include account names, IDs, or private activity.
+      placeholder: "App name and version"
+
+  - type: textarea
+    id: procedure
+    attributes:
+      label: Test procedure
+      description: Explain setup, start method, movement, backgrounding, duration, and stop behavior as relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: observations
+    attributes:
+      label: Observed behavior
+      description: Include exact non-sensitive error text and whether retrying or restarting changed the result.
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Optional sanitized screenshots or details about SideStore, LocalDevVPN, notifications, or battery behavior.

@@ -1,0 +1,123 @@
+name: Bug report
+description: Report a reproducible problem in Waypoint
+title: "[Bug]: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. For sensitive security issues, use the [private vulnerability form](https://github.com/raph559/WaypointApp/security/advisories/new) instead.
+
+        **Never attach or paste a `.mobiledevicepairing` file, pairing-record contents, credentials, private keys, device tokens, or unredacted logs.**
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I have not included a pairing record, credentials, secrets, or unredacted personal/device data.
+          required: true
+        - label: This report is not a privately reportable security vulnerability.
+          required: true
+
+  - type: input
+    id: waypoint-version
+    attributes:
+      label: Waypoint version
+      description: Find this on the GitHub release or in the installed app metadata.
+      placeholder: "1.0.1"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: iPhone model and exact iOS version
+      placeholder: "iPhone 16, iOS 26.0.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method
+      options:
+        - SideStore
+        - Built from source
+        - Other sideloading method
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection when the problem occurred
+      options:
+        - Wi-Fi
+        - Cellular data with Wi-Fi off
+        - Airplane Mode transition
+        - Offline
+        - Not connection-related
+        - Unsure
+    validations:
+      required: true
+
+  - type: input
+    id: localdevvpn
+    attributes:
+      label: LocalDevVPN status
+      description: Say whether it was installed, connected, and had VPN permission. Include its version if known.
+      placeholder: "Installed and connected; VPN permission accepted"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and any visible error text.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Waypoint…
+        2. Select…
+        3. Tap…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Reproducibility
+      options:
+        - Every time
+        - Often
+        - Once
+        - Unable to retry safely
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Optional screenshots or short logs. Remove UDIDs, account details, IP addresses, callback URLs, tokens, and unrelated personal information.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Mention recent iPhone restarts, SideStore refreshes, VPN interruptions, or destination apps when relevant.

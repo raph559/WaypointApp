@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest a focused improvement to Waypoint
+title: "[Feature]: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem before proposing an implementation. Waypoint discloses software-simulated locations and does not try to conceal simulation from other apps.
+
+        **Never include a `.mobiledevicepairing` file, credentials, private keys, device tokens, account information, or secrets in a request.**
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and did not find the same request.
+          required: true
+        - label: I have not included pairing data, credentials, secrets, or private account/device information.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What is difficult today, and who would benefit?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Describe the desired behavior, not only its visual appearance.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional workarounds or different approaches you tried.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Map and place search
+        - Start, move, or stop flow
+        - Wi-Fi or cellular connectivity
+        - Setup and LocalDevVPN
+        - Notifications and background reliability
+        - Accessibility or localization
+        - Build, release, or documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional mockups or sanitized examples. State any iOS-version or device dependency.
