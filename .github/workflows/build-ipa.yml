@@ -2,6 +2,12 @@ name: Build unsigned IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish or update the GitHub Release for the app version
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [main]
   pull_request:
@@ -66,3 +72,75 @@ jobs:
           name: Waypoint-unsigned-ipa
           path: Waypoint-unsigned.ipa
           retention-days: 30
+
+  release:
+    name: publish release
+    needs: build
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (
+        (github.event_name == 'push' &&
+          startsWith(github.event.head_commit.message, 'Release Waypoint ')) ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out release metadata
+        uses: actions/checkout@v4
+
+      - name: Download unsigned IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: Waypoint-unsigned-ipa
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          version="$(awk -F'"' '/MARKETING_VERSION:/ { print $2; exit }' project.yml)"
+          test -n "$version"
+
+          tag="v$version"
+          asset="Waypoint-iOS26-$tag-unsigned.ipa"
+          mv Waypoint-unsigned.ipa "$asset"
+
+          checksum="$(sha256sum "$asset" | awk '{ print $1 }')"
+          notes="$(mktemp)"
+          printf '%s\n' \
+            "## Waypoint $version" \
+            "" \
+            "The first public on-device iOS 26 build of Waypoint." \
+            "" \
+            "### Highlights" \
+            "" \
+            "- Native MapKit map with live place and address autocomplete" \
+            "- Tap or drag the pin, then start or move the simulated location" \
+            "- Visual and haptic Start, Move, Stop, and connection-loss feedback" \
+            "- Optional background keepalive and cautious watchdog notifications" \
+            "- SideStore pairing import and on-device developer-image preparation" \
+            "" \
+            "### Install" \
+            "" \
+            "1. Download $asset below." \
+            "2. Import it into SideStore." \
+            "3. Connect LocalDevVPN, import the pairing file, and tap Prepare device." \
+            "" \
+            "Waypoint uses Apple's software-simulated developer location. Destination apps can detect or reject it." \
+            "" \
+            "**SHA-256:** $checksum" \
+            > "$notes"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber
+          else
+            gh release create "$tag" "$asset" \
+              --target "$GITHUB_SHA" \
+              --title "Waypoint $version" \
+              --notes-file "$notes" \
+              --latest
+          fi
