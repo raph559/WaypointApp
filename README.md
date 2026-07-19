@@ -7,7 +7,7 @@
 
   <h1>Waypoint</h1>
 
-  <p><strong>Pick a place. Tap one button. Follow two Airplane Mode prompts.</strong></p>
+  <p><strong>Pick a place. Tap Start. Waypoint handles the connection.</strong></p>
 
   <p>
     An open-source, map-first location simulator for iOS 26 that runs directly
@@ -30,10 +30,10 @@
       src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white"
       alt="SwiftUI"
     >
-    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.4.0">
+    <a href="https://github.com/raph559/WaypointApp/releases/tag/v0.4.1">
       <img
-        src="https://img.shields.io/badge/version-0.4.0-00B7C7"
-        alt="Version 0.4.0"
+        src="https://img.shields.io/badge/version-0.4.1-00B7C7"
+        alt="Version 0.4.1"
       >
     </a>
     <a href="LICENSE">
@@ -45,7 +45,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.0-unsigned.ipa">
+    <a href="https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.1-unsigned.ipa">
       <img
         src="https://img.shields.io/badge/Download-Waypoint%20IPA-2088FF?style=for-the-badge&logo=apple&logoColor=white"
         alt="Download the latest Waypoint IPA"
@@ -67,10 +67,10 @@ location-simulation service. Search for an address or point of interest, tap the
 map or drag the pin, then start or move the simulated location without returning
 to a computer.
 
-After one-time Developer Mode and pairing setup, choose a location and tap
-**Start on mobile data**. Waypoint caches its support files, opens LocalDevVPN,
-prepares the developer session, and verifies the cellular handoff. You only
-follow the two Airplane Mode prompts; Wi-Fi stays off.
+After one-time Developer Mode and pairing setup, Waypoint adapts to the current
+connection. On Wi-Fi, tap **Start spoofing**. On 4G/5G, tap **Start on mobile
+data** and follow the two Airplane Mode prompts. Waypoint handles the remaining
+preparation automatically.
 
 ## Highlights
 
@@ -82,6 +82,7 @@ follow the two Airplane Mode prompts; Wi-Fi stays off.
 | ✅ | **Clear status feedback** | Shows animated Start, Move, Stop, and connection-loss states with haptics |
 | 🔔 | **Connection warnings** | Warns when Waypoint can no longer confirm the simulation heartbeat |
 | 🌙 | **Optional background keepalive** | Improves reliability while switching between apps |
+| 🔄 | **Connection-aware start** | Uses a normal start on Wi-Fi and shows the guided cellular flow only on mobile data |
 | 📡 | **Guided mobile-data start (experimental)** | Opens LocalDevVPN, prepares the session, and guides the two Airplane Mode changes while Wi-Fi stays off |
 | 🔐 | **Protected local pairing data** | Stores the pairing record on-device and excludes it from backups |
 
@@ -115,12 +116,12 @@ Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
 ID during installation.
 
 1. Download
-   [<code>Waypoint-iOS26-v0.4.0-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.0-unsigned.ipa).
+   [<code>Waypoint-iOS26-v0.4.1-unsigned.ipa</code>](https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v0.4.1-unsigned.ipa).
 2. Open or share the IPA with SideStore.
 3. Install it as a normal SideStore app.
 
 Release notes and the SHA-256 checksum are available on the
-[Waypoint 0.4.0 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.4.0).
+[Waypoint 0.4.1 release page](https://github.com/raph559/WaypointApp/releases/tag/v0.4.1).
 
 ## First-time setup
 
@@ -140,7 +141,7 @@ follow the two Airplane Mode prompts. Waypoint handles the remaining preparation
 automatically.
 
 Manual pairing, preparation, and starts on the current connection remain
-available under **Advanced setup** and the map's **…** menu for troubleshooting.
+available under **Settings** and the map's **…** menu for troubleshooting.
 
 When finished, press **Stop** before disconnecting LocalDevVPN so Waypoint can
 clear the simulated location. If the stop cannot be confirmed, reconnect
@@ -314,14 +315,13 @@ Place the archived <code>Waypoint.app</code> inside a top-level
 
 ## Project status
 
-Waypoint **0.4.0** introduces a guided mobile-data start that automates support
-file caching, LocalDevVPN launch, device preparation, spoof startup, and
-retained-session verification.
+Waypoint **0.4.1** adds a connection-aware Start button and a much shorter
+Settings screen while keeping the guided cellular workflow from 0.4.0.
 
 - The underlying no-Wi-Fi cellular handoff in Waypoint 0.3.0 was installed
   through SideStore and confirmed on a physical iPhone running iOS 26.
-- The new 0.4.0 guided orchestration and interface still require physical-device
-  retesting before they can be considered validated.
+- The guided 0.4.0 cellular workflow was subsequently confirmed by its tester on
+  a physical iPhone running iOS 26.
 - Every release is archived with Xcode 26 and packaged as an unsigned arm64 IPA
   by GitHub Actions.
 - Cellular support remains experimental because results can vary with device

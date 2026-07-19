@@ -1,11 +1,21 @@
+import Combine
 import Foundation
 import Network
+
+enum PhysicalConnectionKind: Equatable, Sendable {
+    case unknown
+    case offline
+    case cellular
+    case wifi
+}
 
 /// Observes a real cellular path independently of LocalDevVPN. The handoff
 /// must not report success merely because its retained local socket still works
 /// in Airplane Mode or because Wi-Fi reconnected behind the scenes.
-final class CellularPathMonitor: @unchecked Sendable {
+final class CellularPathMonitor: ObservableObject, @unchecked Sendable {
     static let shared = CellularPathMonitor()
+
+    @Published private(set) var activeConnection: PhysicalConnectionKind = .unknown
 
     private let cellularMonitor = NWPathMonitor(requiredInterfaceType: .cellular)
     private let wifiMonitor = NWPathMonitor(requiredInterfaceType: .wifi)
@@ -64,7 +74,6 @@ final class CellularPathMonitor: @unchecked Sendable {
 
     private func update(cellular: Bool? = nil, wifi: Bool? = nil) {
         lock.lock()
-        defer { lock.unlock() }
 
         if let cellular {
             hasCellularSample = true
@@ -96,5 +105,25 @@ final class CellularPathMonitor: @unchecked Sendable {
         } else {
             offlineSince = nil
         }
+
+        lock.unlock()
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let connection = self.currentConnection()
+            if self.activeConnection != connection {
+                self.activeConnection = connection
+            }
+        }
+    }
+
+    private func currentConnection() -> PhysicalConnectionKind {
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard hasCellularSample, hasWiFiSample else { return .unknown }
+        if wifiIsSatisfied { return .wifi }
+        if cellularIsSatisfied { return .cellular }
+        return .offline
     }
 }

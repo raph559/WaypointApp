@@ -5,6 +5,7 @@ import SwiftUI
 struct MapSpoofView: View {
     @EnvironmentObject private var model: AppModel
 
+    @ObservedObject private var pathMonitor = CellularPathMonitor.shared
     @StateObject private var placeSearch = PlaceSearchController()
     @State private var selection: SelectedCoordinate
     @State private var cameraPosition: MapCameraPosition
@@ -100,7 +101,7 @@ struct MapSpoofView: View {
                     Image(systemName: model.isReady ? "checkmark.shield.fill" : "gearshape.fill")
                         .foregroundStyle(model.isReady ? .green : .primary)
                 }
-                .accessibilityLabel("Advanced setup")
+                .accessibilityLabel("Settings")
             }
         }
         .sheet(isPresented: $model.isCellularStartPresented) {
@@ -294,7 +295,7 @@ struct MapSpoofView: View {
                     if model.simulatedCoordinate != nil {
                         Task { await model.startSimulation(at: selection) }
                     } else {
-                        model.beginCellularLaunch(at: selection)
+                        model.beginAdaptiveLaunch(at: selection)
                     }
                 } label: {
                     Label(primaryButtonTitle, systemImage: primaryButtonSymbol)
@@ -305,22 +306,31 @@ struct MapSpoofView: View {
                 .disabled(
                     model.isChangingSimulation ||
                     model.isPreparing ||
+                    (model.simulatedCoordinate == nil && !hasUsableConnection) ||
                     model.areLocationWritesPausedForCellularHandoff ||
                     model.isCellularLaunchRunning
                 )
 
                 if model.simulatedCoordinate == nil {
                     Menu {
-                        Button {
-                            Task { await model.startSimulation(at: selection) }
-                        } label: {
-                            Label("Start on current connection", systemImage: "network")
+                        if pathMonitor.activeConnection == .wifi {
+                            Button {
+                                model.beginCellularLaunch(at: selection)
+                            } label: {
+                                Label("Use mobile-data guide", systemImage: "antenna.radiowaves.left.and.right")
+                            }
+                        } else if usesMobileDataGuide {
+                            Button {
+                                Task { await model.startSimulation(at: selection) }
+                            } label: {
+                                Label("Start on current connection", systemImage: "network")
+                            }
                         }
 
                         Button {
                             model.isSetupPresented = true
                         } label: {
-                            Label("Advanced setup", systemImage: "gearshape")
+                            Label("Settings", systemImage: "gearshape")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -342,13 +352,6 @@ struct MapSpoofView: View {
                     .controlSize(.large)
                     .disabled(model.isChangingSimulation || model.isCellularLaunchRunning)
                 }
-            }
-
-            if model.simulatedCoordinate == nil {
-                Text("Waypoint handles the setup and opens LocalDevVPN for you. You only need to follow the Airplane Mode prompts.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if model.simulatedCoordinate != nil {
@@ -455,13 +458,43 @@ struct MapSpoofView: View {
 
     private var primaryButtonTitle: String {
         if model.simulatedCoordinate != nil { return "Move spoof here" }
-        return "Start on mobile data"
+        switch pathMonitor.activeConnection {
+        case .wifi:
+            return "Start spoofing"
+        case .cellular:
+            return "Start on mobile data"
+        case .unknown:
+            return "Checking connection…"
+        case .offline:
+            return "No connection"
+        }
     }
 
     private var primaryButtonSymbol: String {
-        return model.simulatedCoordinate == nil
-            ? "antenna.radiowaves.left.and.right"
-            : "mappin.and.ellipse"
+        if model.simulatedCoordinate != nil { return "mappin.and.ellipse" }
+        switch pathMonitor.activeConnection {
+        case .wifi:
+            return "location.fill"
+        case .cellular:
+            return "antenna.radiowaves.left.and.right"
+        case .unknown:
+            return "network"
+        case .offline:
+            return "wifi.slash"
+        }
+    }
+
+    private var usesMobileDataGuide: Bool {
+        pathMonitor.activeConnection == .cellular
+    }
+
+    private var hasUsableConnection: Bool {
+        switch pathMonitor.activeConnection {
+        case .wifi, .cellular:
+            return true
+        case .unknown, .offline:
+            return false
+        }
     }
 
     private func eventBanner(_ event: SimulationEvent) -> some View {

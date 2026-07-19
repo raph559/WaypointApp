@@ -61,7 +61,7 @@ struct CellularStartView: View {
                 .padding(.top, 30)
                 .padding(.bottom, 36)
             }
-            .navigationTitle("Start on Mobile Data")
+            .navigationTitle(model.isLaunchingOnWiFi ? "Start Spoofing" : "Start on Mobile Data")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -224,7 +224,7 @@ struct CellularStartView: View {
                 symbol: "antenna.radiowaves.left.and.right",
                 color: .blue,
                 title: "Getting Ready",
-                message: "Waypoint is preparing the cellular start guide.",
+                message: "Waypoint is preparing the start guide.",
                 showsActivity: true
             )
 
@@ -242,7 +242,9 @@ struct CellularStartView: View {
                 symbol: "arrow.down.circle.fill",
                 color: .blue,
                 title: "Getting Waypoint Ready",
-                message: "\(message) Keep mobile data on. The first download is about 17 MB.",
+                message: model.isLaunchingOnWiFi
+                    ? "\(message) Keep Wi-Fi connected. The first download is about 17 MB."
+                    : "\(message) Keep mobile data on. The first download is about 17 MB.",
                 showsActivity: true
             )
 
@@ -260,7 +262,9 @@ struct CellularStartView: View {
                 symbol: "network.badge.shield.half.filled",
                 color: .blue,
                 title: "Waiting for LocalDevVPN",
-                message: "Keep mobile data on for one more moment.",
+                message: model.isLaunchingOnWiFi
+                    ? "Keep Wi-Fi connected for one more moment."
+                    : "Keep mobile data on for one more moment.",
                 showsActivity: true
             )
 
@@ -279,7 +283,9 @@ struct CellularStartView: View {
                 symbol: "iphone",
                 color: .blue,
                 title: "Preparing Your iPhone",
-                message: "Keep Airplane Mode on and Wi-Fi off.",
+                message: model.isLaunchingOnWiFi
+                    ? "Keep Waypoint open for a moment."
+                    : "Keep Airplane Mode on and Wi-Fi off.",
                 showsActivity: true
             )
 
@@ -288,7 +294,9 @@ struct CellularStartView: View {
                 symbol: "location.fill",
                 color: .blue,
                 title: "Starting Your Spoof",
-                message: "Stay in Airplane Mode for one more moment.",
+                message: model.isLaunchingOnWiFi
+                    ? "Using your current Wi-Fi connection."
+                    : "Stay in Airplane Mode for one more moment.",
                 showsActivity: true
             )
 
@@ -299,10 +307,10 @@ struct CellularStartView: View {
             return StepPresentation(
                 symbol: "checkmark.circle.fill",
                 color: .green,
-                title: "Spoof Active on Mobile Data",
+                title: model.isLaunchingOnWiFi ? "Spoof Active" : "Spoof Active on Mobile Data",
                 message: model.notificationWarningsEnabled
-                    ? "You can now use other apps on 4G/5G."
-                    : "You can now use other apps on 4G/5G. Stop warnings are off because notifications were not allowed.",
+                    ? (model.isLaunchingOnWiFi ? "You can now use other apps." : "You can now use other apps on 4G/5G.")
+                    : "The spoof is active. Stop warnings are off because notifications were not allowed.",
                 showsActivity: false
             )
 

@@ -45,6 +45,7 @@ final class AppModel: ObservableObject {
     private var isStoppingSimulation = false
     private var isApplicationActive = true
     private var didLeaveForLocalDevVPN = false
+    private var pendingLaunchRoute: GuidedLaunchRoute?
     private static let keepAliveKey = "backgroundKeepAliveEnabled"
     private static let pairingCallbackScheme = "waypoint-pairing-c7f2e8b4"
 
@@ -73,6 +74,10 @@ final class AppModel: ObservableObject {
 
     var isCellularLaunchRunning: Bool {
         cellularLaunchOperationID != nil
+    }
+
+    var isLaunchingOnWiFi: Bool {
+        pendingLaunchRoute == .wifi
     }
 
     var canReplacePairingForCellularLaunch: Bool {
@@ -121,7 +126,24 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func beginAdaptiveLaunch(at coordinate: SelectedCoordinate) {
+        let route: GuidedLaunchRoute
+        switch CellularPathMonitor.shared.activeConnection {
+        case .wifi:
+            route = .wifi
+        case .cellular:
+            route = .cellular
+        case .unknown, .offline:
+            return
+        }
+        beginGuidedLaunch(at: coordinate, route: route)
+    }
+
     func beginCellularLaunch(at coordinate: SelectedCoordinate) {
+        beginGuidedLaunch(at: coordinate, route: .cellular)
+    }
+
+    private func beginGuidedLaunch(at coordinate: SelectedCoordinate, route: GuidedLaunchRoute) {
         guard coordinate.isValid,
               simulatedCoordinate == nil,
               !isChangingSimulation,
@@ -133,6 +155,7 @@ final class AppModel: ObservableObject {
         let operationID = UUID()
         cellularLaunchOperationID = operationID
         pendingCellularCoordinate = coordinate
+        pendingLaunchRoute = route
         cellularLaunchState = PairingFileStore.exists ? .cachingSupportFiles("Checking one-time files…") : .needsPairing
         isCellularStartPresented = true
         isSetupPresented = false
@@ -158,6 +181,7 @@ final class AppModel: ObservableObject {
 
         if needsBridgeCleanup, let operationID {
             pendingCellularCoordinate = nil
+            pendingLaunchRoute = nil
             cellularLaunchState = .idle
             isCellularStartPresented = false
             didLeaveForLocalDevVPN = false
@@ -175,6 +199,7 @@ final class AppModel: ObservableObject {
         cellularLaunchTask = nil
         cellularLaunchOperationID = nil
         pendingCellularCoordinate = nil
+        pendingLaunchRoute = nil
         cellularLaunchState = .idle
         isCellularStartPresented = false
         didLeaveForLocalDevVPN = false
@@ -212,6 +237,7 @@ final class AppModel: ObservableObject {
         cellularLaunchTask = nil
         cellularLaunchOperationID = nil
         pendingCellularCoordinate = nil
+        pendingLaunchRoute = nil
         cellularLaunchState = .idle
         isCellularStartPresented = false
         didLeaveForLocalDevVPN = false
@@ -745,8 +771,11 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
+                let connectionAdvice = pendingLaunchRoute == .wifi
+                    ? "Check your Wi-Fi connection and try again."
+                    : "Turn mobile data on and try again."
                 failCellularLaunch(
-                    "Waypoint could not download its one-time support files. Turn mobile data on and try again.\n\n\(error.localizedDescription)",
+                    "Waypoint could not download its one-time support files. \(connectionAdvice)\n\n\(error.localizedDescription)",
                     operationID: operationID
                 )
             }
@@ -796,7 +825,65 @@ final class AppModel: ObservableObject {
                 return
             }
 
-            await waitForOfflineAndStart(operationID: operationID)
+            if pendingLaunchRoute == .wifi {
+                await startGuidedSimulationOnWiFi(operationID: operationID)
+            } else {
+                await waitForOfflineAndStart(operationID: operationID)
+            }
+        }
+    }
+
+    private func startGuidedSimulationOnWiFi(operationID: UUID) async {
+        guard cellularLaunchOperationID == operationID,
+              pendingLaunchRoute == .wifi,
+              let coordinate = pendingCellularCoordinate else {
+            return
+        }
+
+        guard CellularPathMonitor.shared.activeConnection == .wifi else {
+            failCellularLaunch(
+                "Wi-Fi disconnected before Waypoint could start. Reconnect Wi-Fi and try again, or close this guide to use mobile data.",
+                operationID: operationID
+            )
+            return
+        }
+
+        do {
+            cellularLaunchState = .preparingDevice
+            try await prepareDeviceCore()
+            try Task.checkCancellation()
+
+            guard cellularLaunchOperationID == operationID,
+                  pendingLaunchRoute == .wifi else { return }
+            cellularLaunchState = .startingSpoof
+            try await establishGuidedSimulation(at: coordinate, operationID: operationID)
+            try Task.checkCancellation()
+
+            guard cellularLaunchOperationID == operationID,
+                  simulatedCoordinate != nil,
+                  let sessionID = simulationSessionID else {
+                return
+            }
+
+            startBackgroundKeepAliveIfNeeded()
+            beginResendLoop(for: sessionID)
+            cellularLaunchTask = nil
+            cellularLaunchState = .succeeded
+        } catch is CancellationError {
+            return
+        } catch {
+            guard !Task.isCancelled,
+                  cellularLaunchOperationID == operationID else { return }
+            if case .preparingDevice = cellularLaunchState {
+                await recordPreparationFailure(error)
+            } else {
+                invalidateConnectionReadiness()
+                await bridge.disconnect()
+            }
+            failCellularLaunch(
+                "Waypoint could not start the spoof on Wi-Fi. Confirm LocalDevVPN and Developer Mode are enabled, then try again.\n\n\(error.localizedDescription)",
+                operationID: operationID
+            )
         }
     }
 
@@ -844,6 +931,8 @@ final class AppModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
+            guard !Task.isCancelled,
+                  cellularLaunchOperationID == operationID else { return }
             if case .preparingDevice = cellularLaunchState {
                 await recordPreparationFailure(error)
             } else {
@@ -1162,4 +1251,9 @@ final class AppModel: ObservableObject {
         developerImageState = .required
         preparationMessage = "Reconnect LocalDevVPN and prepare the device again"
     }
+}
+
+private enum GuidedLaunchRoute {
+    case wifi
+    case cellular
 }

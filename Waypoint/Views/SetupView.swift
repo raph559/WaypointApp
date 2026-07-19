@@ -19,7 +19,7 @@ struct SetupView: View {
         List {
             Section {
                 setupRow(
-                    title: "Pairing file",
+                    title: "Pairing Record",
                     detail: pairingDetail,
                     state: model.pairingState
                 )
@@ -29,50 +29,41 @@ struct SetupView: View {
                     state: model.tunnelState
                 )
                 setupRow(
-                    title: "Developer image",
+                    title: "Developer Support",
                     detail: developerImageDetail,
                     state: model.developerImageState
                 )
             } header: {
-                Text("Device readiness")
-            } footer: {
-                Text("Developer Mode must be enabled. LocalDevVPN stays on-device; it gives Waypoint a loopback path to Apple's developer service.")
+                Text("Status")
             }
 
-            Section(model.pairingState.isReady ? "1. Replace pairing" : "1. Import pairing") {
-                Button {
-                    isChoosingPairingFile = true
+            Section("Device Setup") {
+                Menu {
+                    Button {
+                        isChoosingPairingFile = true
+                    } label: {
+                        Label("Choose from Files", systemImage: "folder")
+                    }
+
+                    Button {
+                        isSideStoreConfirmationPresented = true
+                    } label: {
+                        Label("Import from SideStore", systemImage: "arrow.up.forward.app")
+                    }
                 } label: {
                     Label(
-                        model.pairingState.isReady ? "Replace from Files" : "Choose pairing file",
+                        model.pairingState.isReady ? "Replace Pairing Record" : "Import Pairing Record",
                         systemImage: "doc.badge.plus"
                     )
                 }
                 .disabled(model.isPreparing || model.simulatedCoordinate != nil)
 
                 Button {
-                    isSideStoreConfirmationPresented = true
-                } label: {
-                    Label("Direct SideStore callback", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .disabled(model.isPreparing || model.simulatedCoordinate != nil)
-
-                Text("Files import is safer. SideStore's direct callback places the pairing record in a custom URL and may include it in SideStore debug logs; use it only if you accept that risk.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("2. Connect and prepare") {
-                Text("Connect LocalDevVPN first, then return here. The first preparation downloads Apple's personalized developer image files; after a reboot, prepare again to remount them.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Button {
                     Task { await model.prepareDevice() }
                 } label: {
                     HStack {
                         Label(
-                            model.isReady ? "Check again" : "Prepare device",
+                            model.isReady ? "Check Again" : "Prepare iPhone",
                             systemImage: model.isReady ? "checkmark.shield" : "wrench.and.screwdriver"
                         )
                         Spacer()
@@ -81,56 +72,37 @@ struct SetupView: View {
                 }
                 .disabled(model.isPreparing || !model.pairingState.isReady)
 
-                if !model.preparationMessage.isEmpty {
+                if model.isPreparing, !model.preparationMessage.isEmpty {
                     Text(model.preparationMessage)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+            } footer: {
+                Text("Choose Files for the most private pairing import.")
+            }
 
-                Button("Remove downloaded developer image", role: .destructive) {
+            Section("Reliability") {
+                Toggle("Keep Spoof Active", isOn: $model.backgroundKeepAliveEnabled)
+            } footer: {
+                Text("Improves background reliability and may use more battery. Notifications warn if the spoof stops.")
+            }
+
+            Section("Troubleshooting") {
+                Button("Reset Support Files", role: .destructive) {
                     model.resetDeveloperImage()
                 }
                 .disabled(model.isPreparing || model.simulatedCoordinate != nil)
+            } footer: {
+                Text("Use this only if device preparation keeps failing.")
             }
-
-            Section("Background reliability") {
-                Toggle("Keep simulation alive", isOn: $model.backgroundKeepAliveEnabled)
-                Text("While spoofing, Waypoint can use low-accuracy location updates and silent, mixed audio to keep the developer connection alive after you switch apps. iOS may show location activity and this uses extra battery.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                Label("Connection-loss notifications", systemImage: "bell.badge.fill")
-                    .font(.subheadline.weight(.medium))
-                Text("Allow notifications when first starting a spoof. Waypoint will warn if its heartbeat stops for about 30 seconds or if it detects that the developer connection ended.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Cellular without Wi-Fi") {
-                Label("Guided start", systemImage: "antenna.radiowaves.left.and.right")
-                    .font(.subheadline.weight(.medium))
-
-                Text("Normally, return to the map and tap “Start on mobile data.” Waypoint checks its one-time files, opens LocalDevVPN, prepares the iPhone, starts the spoof, and verifies the cellular handoff automatically.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                Text("The only timed actions iOS requires from you are turning Airplane Mode on and then off when prompted. Keep Wi-Fi off throughout.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                Text("Developer Mode and the pairing record are still required once. The retained-session path is device-dependent, so Waypoint verifies it before reporting success.")
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-
-                Button("Use guided start on the map") { dismiss() }
-            }
-
-            Section {
+        }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
         }
-        .navigationTitle("Advanced setup")
-        .navigationBarTitleDisplayMode(.inline)
         .fileImporter(
             isPresented: $isChoosingPairingFile,
             allowedContentTypes: pairingTypes,
@@ -142,25 +114,25 @@ struct SetupView: View {
             isPresented: $isSideStoreConfirmationPresented,
             titleVisibility: .visible
         ) {
-            Button("Continue to SideStore") {
+            Button("Import from SideStore") {
                 model.requestPairingFromSideStore()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Pairing records are sensitive. SideStore sends yours through a callback URL that may appear in SideStore debug logs. Choose Files instead if you prefer the safer option.")
+            Text("Pairing records are sensitive. SideStore sends yours through a callback URL that may appear in debug logs. Choose Files for better privacy.")
         }
     }
 
     private var pairingDetail: String {
-        detail(for: model.pairingState, ready: "Imported", required: "Choose a pairing file")
+        detail(for: model.pairingState, ready: "Imported", required: "Missing")
     }
 
     private var tunnelDetail: String {
-        detail(for: model.tunnelState, ready: "Connected", required: "Connect LocalDevVPN")
+        detail(for: model.tunnelState, ready: "Connected", required: "Not checked")
     }
 
     private var developerImageDetail: String {
-        detail(for: model.developerImageState, ready: "Mounted", required: "Prepare after each reboot")
+        detail(for: model.developerImageState, ready: "Ready", required: "Not checked")
     }
 
     private func detail(for state: SetupCheckState, ready: String, required: String) -> String {

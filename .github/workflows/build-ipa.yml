@@ -118,6 +118,8 @@ jobs:
             "" \
             "### Highlights" \
             "" \
+            "- Connection-aware Start button: Start spoofing on Wi-Fi and Start on mobile data on 4G/5G" \
+            "- Compact Settings screen with only status, device setup, reliability, and troubleshooting controls" \
             "- Guided Start on mobile data with automatic support-file caching, LocalDevVPN launch, device preparation, and retained-session verification" \
             "- Only two guided system actions remain: turn Airplane Mode on, then off, while keeping Wi-Fi off" \
             "- One-time SideStore or Files pairing import directly inside the guide" \
@@ -133,7 +135,7 @@ jobs:
             "3. Turn Wi-Fi off, leave mobile data on, choose a location, and tap Start on mobile data." \
             "4. Follow Waypoint's prompts to turn Airplane Mode on, then off." \
             "" \
-            "The retained-session mechanism was confirmed in Waypoint 0.3.0 on a physical iPhone running iOS 26. The new 0.4.0 guided wrapper still needs physical-device retesting and remains experimental." \
+            "The retained-session mechanism and the guided 0.4.0 cellular flow were confirmed on a physical iPhone running iOS 26. Cellular support remains experimental across devices." \
             "" \
             "Waypoint uses Apple's software-simulated developer location. Destination apps can detect or reject it." \
             "" \
