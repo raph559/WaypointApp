@@ -151,22 +151,29 @@ export function App() {
 
         <section className="section feature-section" id="features">
           <div className="section-inner" data-reveal>
-            <header className="section-heading">
-              <p className="section-kicker">How it works</p>
-              <h2>Pick. Start. Move.</h2>
-            </header>
+            <div className="feature-overview">
+              <header className="section-heading">
+                <p className="section-kicker">How it works</p>
+                <h2>Everything happens on the map.</h2>
+              </header>
 
-            <div className="capability-grid">
-              {capabilities.map((capability, index) => (
-                <article
-                  className="capability"
-                  key={capability.title}
-                  style={{ "--item-delay": `${index * 70}ms` }}
-                >
-                  <h3>{capability.title}</h3>
-                  <p>{capability.body}</p>
-                </article>
-              ))}
+              <div className="capability-list">
+                {capabilities.map((capability, index) => (
+                  <article
+                    className="capability"
+                    key={capability.title}
+                    style={{ "--item-delay": `${index * 70}ms` }}
+                  >
+                    <span className="capability-index" aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3>{capability.title}</h3>
+                      <p>{capability.body}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className="connection-switcher">
@@ -210,7 +217,7 @@ export function App() {
           <div className="section-inner setup-inner" data-reveal>
             <div>
               <p className="section-kicker">One-time setup</p>
-              <h2>A little setup, once.</h2>
+              <h2>Before the first start.</h2>
               <p className="setup-copy">
                 Enable Developer Mode, add your iPhone&apos;s pairing record,
                 and install <a href={links.localDevVPN}>LocalDevVPN</a>. After

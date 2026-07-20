@@ -7,7 +7,8 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --graphite: #101318;
-  --graphite-raised: #181c21;
+  --petrol: #20343a;
+  --terrain: #8f8576;
   --soft-white: #f4f5f2;
   --mint: #55d6b0;
   --mint-bright: #6fe0bd;
@@ -205,7 +206,7 @@ h1 {
   align-items: center;
   justify-content: center;
   border: 2px solid transparent;
-  border-radius: 12px;
+  border-radius: 6px;
   font-size: 1.06rem;
   font-weight: 730;
   line-height: 1;
@@ -286,7 +287,7 @@ h1 {
   margin: 0;
   color: var(--soft-white);
   font-size: clamp(2.65rem, 4.5vw, 4.45rem);
-  font-weight: 760;
+  font-weight: 690;
   line-height: 1.02;
   letter-spacing: -0.052em;
 }
@@ -295,7 +296,7 @@ h1 {
   margin: 0;
   color: var(--soft-white);
   font-size: clamp(1.3rem, 1.9vw, 1.75rem);
-  font-weight: 710;
+  font-weight: 680;
   line-height: 1.16;
   letter-spacing: -0.032em;
 }
@@ -304,22 +305,38 @@ h1 {
   border-block: 1px solid var(--line);
 }
 
-.capability-grid {
-  margin-top: clamp(52px, 5.5vw, 72px);
+.feature-overview {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(28px, 4vw, 54px);
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(64px, 9vw, 128px);
+  align-items: start;
+}
+
+.capability-list {
+  border-top: 1px solid var(--line);
 }
 
 .capability {
   min-width: 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
+  padding: 22px 0;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.capability-index {
+  padding-top: 4px;
+  color: var(--mint);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.08em;
 }
 
 .capability p {
-  max-width: 340px;
-  margin: 14px 0 0;
+  max-width: 520px;
+  margin: 9px 0 0;
   color: var(--muted);
   font-size: 1rem;
   line-height: 1.55;
@@ -327,22 +344,23 @@ h1 {
 
 .connection-switcher {
   margin-top: clamp(54px, 6vw, 76px);
-  padding-top: 34px;
+  padding: clamp(28px, 3.2vw, 42px);
   display: grid;
   grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.22fr);
   gap: clamp(42px, 6vw, 76px);
-  border-top: 1px solid var(--line);
+  background: var(--petrol);
+  border-left: 3px solid var(--mint);
 }
 
 .mode-tabs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 22px;
 }
 
 .mode-tab {
-  min-height: 92px;
-  padding: 17px;
+  min-height: 84px;
+  padding: 14px 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -350,8 +368,9 @@ h1 {
   gap: 12px;
   color: var(--muted);
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(244, 245, 242, 0.28);
+  border-radius: 0;
   text-align: left;
   cursor: pointer;
   transition:
@@ -377,14 +396,14 @@ h1 {
 
 .mode-tab[aria-pressed="true"] {
   color: var(--soft-white);
-  background: #23282e;
-  border-color: var(--mint);
+  background: transparent;
+  border-bottom: 3px solid var(--mint);
 }
 
 .connection-panel {
   min-height: 150px;
   padding-left: 28px;
-  border-left: 2px solid var(--mint);
+  border-left: 1px solid rgba(244, 245, 242, 0.28);
   animation: panel-enter 260ms var(--ease-out) both;
 }
 
@@ -406,21 +425,21 @@ h1 {
 }
 
 .setup-section {
-  color: var(--soft-white);
-  background: var(--graphite-raised);
-  border-bottom: 1px solid var(--line);
+  color: var(--graphite);
+  background: var(--terrain);
+  border-bottom: 0;
 }
 
 .setup-section .section-kicker {
-  color: var(--mint);
+  color: var(--graphite);
 }
 
 .setup-section h2 {
-  color: var(--soft-white);
+  color: var(--graphite);
 }
 
 .setup-section a:focus-visible {
-  outline-color: var(--mint);
+  outline-color: var(--graphite);
 }
 
 .setup-inner {
@@ -433,14 +452,14 @@ h1 {
 .setup-copy {
   max-width: 760px;
   margin: 26px 0 0;
-  color: #c1c7c4;
+  color: #262b2d;
   font-size: clamp(1.08rem, 1.6vw, 1.3rem);
   line-height: 1.58;
   letter-spacing: -0.012em;
 }
 
 .setup-copy a {
-  color: var(--soft-white);
+  color: var(--graphite);
   font-weight: 720;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -448,26 +467,52 @@ h1 {
 
 .setup-facts {
   margin: 32px 0 0;
-  padding: 0;
+  padding: 22px 0 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px 0;
   list-style: none;
+  border-top: 1px solid rgba(16, 19, 24, 0.32);
 }
 
 .setup-facts li {
-  padding: 9px 13px;
-  color: #c7cdca;
-  background: #1d2227;
-  border: 1px solid #42484c;
-  border-radius: 999px;
+  padding: 0 18px;
+  color: var(--graphite);
+  border-left: 1px solid rgba(16, 19, 24, 0.32);
   font-size: 0.84rem;
   font-weight: 680;
+}
+
+.setup-facts li:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
 
 .setup-actions {
   flex: 0 0 auto;
   justify-content: flex-end;
+}
+
+.setup-section .button-primary {
+  color: var(--soft-white);
+  background: var(--graphite);
+  border-color: var(--graphite);
+}
+
+.setup-section .button-primary:hover {
+  background: #24292f;
+  border-color: #24292f;
+}
+
+.setup-section .button-secondary {
+  color: var(--graphite);
+  border-color: var(--graphite);
+}
+
+.setup-section .button-secondary:hover {
+  color: var(--soft-white);
+  background: var(--graphite);
+  border-color: var(--graphite);
 }
 
 .site-footer {
@@ -580,13 +625,12 @@ h1 {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .button:hover,
-  .mode-tab:hover {
+  .button:hover {
     transform: translate3d(0, -2px, 0);
   }
 
   .mode-tab:hover {
-    border-color: #747c79;
+    color: var(--soft-white);
   }
 }
 
@@ -670,6 +714,11 @@ h1 {
   .setup-actions {
     justify-content: flex-start;
   }
+
+  .feature-overview {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -681,13 +730,8 @@ h1 {
     padding-block: 72px;
   }
 
-  .capability-grid,
   .connection-switcher {
     grid-template-columns: 1fr;
-  }
-
-  .capability-grid {
-    gap: 28px;
   }
 
   .connection-switcher {
@@ -696,6 +740,17 @@ h1 {
 
   .connection-panel {
     min-height: 0;
+  }
+
+  .setup-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 24px;
+  }
+
+  .setup-facts li {
+    padding: 0;
+    border-left: 0;
   }
 
   .site-footer {
@@ -752,6 +807,10 @@ h1 {
 
   .connection-panel {
     padding-left: 20px;
+  }
+
+  .setup-facts {
+    grid-template-columns: 1fr;
   }
 
   .site-footer nav {
