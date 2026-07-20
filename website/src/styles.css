@@ -134,7 +134,7 @@ h3 {
 
 .hero {
   width: min(82vw, 1200px);
-  min-height: clamp(600px, calc(88svh - 104px), 760px);
+  min-height: clamp(580px, calc(83svh - 104px), 720px);
   margin-inline: auto;
   padding-block: clamp(50px, 7vh, 86px) clamp(68px, 8vh, 98px);
   display: grid;
