@@ -43,22 +43,25 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Update the Codemagic trigger branch
+      - name: Create the Codemagic trigger tag
         run: |
           set -euo pipefail
 
-          git config user.name "Waypoint GitHub Actions"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit --allow-empty \
-            --message "Trigger Codemagic build from GitHub run $GITHUB_RUN_ID"
-          git push --force origin HEAD:refs/heads/codemagic-build
+          # Remove the obsolete branch used by the previous trigger design.
+          git push origin --delete codemagic-build 2>/dev/null || true
 
-          trigger_commit="$(git rev-parse HEAD)"
+          # Recreate one fixed tag at the current main commit. Recreating the tag
+          # emits a tag-created webhook without adding commits or branches.
+          git push origin --delete refs/tags/codemagic-build 2>/dev/null || true
+          git tag --force codemagic-build main
+          git push origin refs/tags/codemagic-build
+
+          trigger_commit="$(git rev-parse main)"
           {
             echo "### Codemagic webhook triggered"
             echo
             echo "- Workflow: \`waypoint-unsigned\`"
             echo "- Source: current \`main\`"
-            echo "- Trigger branch: \`codemagic-build\`"
+            echo "- Trigger tag: \`codemagic-build\`"
             echo "- Trigger commit: \`$trigger_commit\`"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -350,11 +350,11 @@ The repository owner can queue the <code>waypoint-unsigned</code> workflow from
 **Actions → Trigger Codemagic build → Run workflow**. Requests from any other
 account or branch are rejected.
 
-The Action creates an empty commit from the current <code>main</code> source and
-updates the dedicated <code>codemagic-build</code> branch. Codemagic listens only
-for pushes to that branch. Regular pushes, pull requests, tags, and public
-contributors therefore cannot start a Codemagic build. No Codemagic API token
-or GitHub secret is required.
+The Action recreates a single <code>codemagic-build</code> tag at the current
+<code>main</code> commit. Codemagic listens only for that tag, so no build branch
+or empty commit is created. Regular pushes, pull requests, other tags, and
+public contributors cannot start a Codemagic build. No Codemagic API token or
+GitHub secret is required.
 
 The resulting unsigned IPA is stored as a Codemagic build artifact for
 SideStore.

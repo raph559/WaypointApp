@@ -7,15 +7,13 @@ workflows:
     environment:
       xcode: 26.0
 
-    # Only the owner-gated GitHub Action updates this dedicated branch.
+    # Only the owner-gated GitHub Action creates this trigger tag.
     triggering:
       events:
-        - push
-      branch_patterns:
+        - tag
+      tag_patterns:
         - pattern: codemagic-build
           include: true
-          source: true
-      cancel_previous_builds: true
 
     scripts:
       - name: Install XcodeGen
