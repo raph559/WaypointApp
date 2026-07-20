@@ -351,6 +351,9 @@ Import the repository into Codemagic, select the
 <code>main</code> branch with Xcode 26.0. The unsigned IPA is published as a
 build artifact for SideStore.
 
+Automatic Codemagic webhook triggers are intentionally disabled. A build must
+be started manually by someone who has access to the app in Codemagic.
+
 </details>
 
 <details>
