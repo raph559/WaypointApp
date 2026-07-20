@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 const links = {
   download: "https://github.com/raph559/WaypointApp/releases/latest",
   github: "https://github.com/raph559/WaypointApp",
@@ -6,7 +8,6 @@ const links = {
   limitations:
     "https://github.com/raph559/WaypointApp#compatibility-and-limitations",
   localDevVPN: "https://apps.apple.com/app/id6755608044",
-  developerSupport: "https://github.com/doronz88/DeveloperDiskImage",
   issues: "https://github.com/raph559/WaypointApp/issues",
   contributing:
     "https://github.com/raph559/WaypointApp/blob/main/CONTRIBUTING.md",
@@ -17,60 +18,95 @@ const links = {
 const iconUrl = `${import.meta.env.BASE_URL}waypoint-icon.png`;
 const markUrl = `${import.meta.env.BASE_URL}waypoint-mark.png`;
 
-const steps = [
+const capabilities = [
   {
-    number: "01",
-    title: "Find it",
-    body: "Search with MapKit, tap anywhere on the map, or drag the pin to precise coordinates.",
+    title: "Find a place",
+    body: "Use MapKit suggestions, tap anywhere on the map, or drag the pin.",
   },
   {
-    number: "02",
-    title: "Start it",
+    title: "Start from the map",
     body: "Waypoint checks pairing, developer support, and LocalDevVPN within the Start flow.",
   },
   {
-    number: "03",
-    title: "Move anytime",
-    body: "Update an active simulation instantly, then stop it cleanly when you are finished.",
-  },
-];
-
-const features = [
-  {
-    title: "Map-first controls",
-    body: "Place autocomplete, tap selection, a draggable pin, and a precise coordinate readout without leaving the map.",
+    title: "Move without restarting",
+    body: "Choose a new point and update an active simulation immediately.",
   },
   {
-    title: "Connection-aware start",
-    body: "A direct Wi-Fi flow and a guided cellular-only handoff when Wi-Fi is unavailable.",
-  },
-  {
-    title: "Clear state feedback",
-    body: "Waypoint shows clear start, move, stop, active, and connection-loss feedback, with haptics for each change.",
-  },
-  {
-    title: "Local disconnect alerts",
-    body: "Optional notifications warn when Waypoint can no longer confirm the simulation heartbeat—even offline.",
+    title: "Stay informed",
+    body: "Status feedback and haptics report changes; optional local alerts warn when confirmation is lost.",
   },
 ];
 
 const requirements = [
-  "An iPhone running iOS 26 with Developer Mode enabled",
-  "The unsigned IPA signed with your preferred compatible method",
-  "LocalDevVPN installed with its one-time VPN permission accepted",
-  "A pairing record created specifically for this iPhone",
-  "Internet access for the initial developer-support download and MapKit search",
+  "iPhone on iOS 26 with Developer Mode enabled",
+  "Waypoint's unsigned IPA, signed and installed",
+  "LocalDevVPN with its VPN permission accepted",
+  "A pairing record created for this iPhone",
+  "Internet for the initial developer-support download and whenever using MapKit search",
 ];
 
-const limits = [
-  "iOS marks the location as software-simulated, and apps can detect or reject it.",
-  "Apps may compare location with IP address, time zone, Wi-Fi, cellular, or motion data.",
-  "A disconnect alert means confirmation was lost; it cannot prove the exact moment real location returned.",
-  "Wi-Fi on iOS 26 is the primary supported path. Cellular-only start remains experimental and device-dependent.",
-  "Tap Stop before disconnecting LocalDevVPN. If Stop cannot be confirmed, disconnect LocalDevVPN or restart the iPhone, then verify the reported location.",
-];
+const connectionModes = {
+  wifi: {
+    label: "Wi-Fi",
+    status: "Primary path",
+    title: "Start directly from the map.",
+    body: "Choose a location and tap Start spoofing. Airplane Mode is not required.",
+  },
+  cellular: {
+    label: "Mobile data",
+    status: "Experimental",
+    title: "Follow the guided handoff.",
+    body: "Keep Wi-Fi off and follow the two Airplane Mode prompts. Reliability varies by device and iOS network state.",
+  },
+};
+
+function useRevealMotion() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+
+    if (reduceMotion.matches || !("IntersectionObserver" in window)) {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const elements = [...document.querySelectorAll("[data-reveal]")];
+
+    root.classList.add("motion-ready");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+    );
+
+    elements.forEach((element) => {
+      if (element.getBoundingClientRect().top < window.innerHeight * 0.92) {
+        element.classList.add("is-visible");
+      } else {
+        observer.observe(element);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+      root.classList.remove("motion-ready");
+    };
+  }, []);
+}
 
 export function App() {
+  const [connectionMode, setConnectionMode] = useState("wifi");
+  const activeMode = connectionModes[connectionMode];
+
+  useRevealMotion();
+
   return (
     <div className="site-shell" id="top">
       <a className="skip-link" href="#main-content">
@@ -105,8 +141,8 @@ export function App() {
             </h1>
 
             <p className="hero-description">
-              Choose a place on the map and control Apple&apos;s developer
-              location simulation directly from your iPhone.
+              Search for a place, tap or drag the pin, then start, move, or stop
+              Apple&apos;s developer location simulation from your iPhone.
             </p>
 
             <div className="hero-actions">
@@ -129,70 +165,39 @@ export function App() {
           </div>
         </section>
 
-        <section className="mantra" aria-label="Waypoint summary">
-          <p>Search. Place. Simulate.</p>
-          <a href="#workflow" aria-label="Continue to how Waypoint works">
-            Explore the app
-          </a>
-        </section>
-
-        <section className="section workflow-section" id="workflow">
-          <div className="section-inner">
+        <section className="section capability-section" id="features">
+          <div className="section-inner" data-reveal>
             <header className="section-heading">
-              <p className="section-kicker">The workflow</p>
-              <h2>Pick a place. Start. Move anytime.</h2>
+              <p className="section-kicker">What you can do</p>
+              <h2>A map, a pin, and direct control.</h2>
             </header>
 
-            <div className="step-grid">
-              {steps.map((step) => (
-                <article className="step" key={step.number}>
-                  <p className="step-number">{step.number}</p>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
+            <div className="capability-grid">
+              {capabilities.map((capability) => (
+                <article className="capability" key={capability.title}>
+                  <h3>{capability.title}</h3>
+                  <p>{capability.body}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="section feature-section" id="features">
-          <div className="section-inner feature-layout">
-            <header className="section-heading feature-heading">
-              <p className="section-kicker">What is built in</p>
-              <h2>Everything around the pin stays out of your way.</h2>
-              <p className="section-intro">
-                Waypoint keeps the map central and makes the device connection
-                understandable—even when the underlying setup is technical.
-              </p>
-            </header>
-
-            <div className="feature-list">
-              {features.map((feature) => (
-                <article className="feature-item" key={feature.title}>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section section-light" id="setup">
-          <div className="section-inner setup-layout">
+        <section className="section setup-section" id="setup">
+          <div className="section-inner setup-layout" data-reveal>
             <header className="section-heading setup-heading">
-              <p className="section-kicker">First-time setup</p>
-              <h2>Set up once, then start from the map.</h2>
+              <p className="section-kicker">Setup and connections</p>
+              <h2>Everything needed before the first start.</h2>
               <p className="section-intro">
-                Waypoint controls an Apple developer service, so setup is more
-                involved than a typical App Store app. The guide keeps each
-                requirement in one place.
+                It takes a few device-specific pieces because Waypoint controls
+                an Apple developer service. Normal use stays on the iPhone.
               </p>
               <a className="text-link" href={links.setup}>
                 Read the complete setup guide
               </a>
             </header>
 
-            <div className="requirements-column">
+            <div className="setup-details">
               <ol className="requirement-list" role="list">
                 {requirements.map((requirement, index) => (
                   <li key={requirement}>
@@ -205,138 +210,116 @@ export function App() {
               </ol>
 
               <p className="setup-note">
-                SideStore is an installation option, not a runtime dependency.
+                SideStore is optional and is not a runtime dependency.
                 <a href={links.localDevVPN}> LocalDevVPN</a> is required by the
-                current connection architecture.
+                current architecture.
               </p>
+            </div>
+
+            <div className="connection-switcher">
+              <div
+                className="mode-tabs"
+                role="group"
+                aria-label="Connection mode"
+              >
+                {Object.entries(connectionModes).map(([key, mode]) => (
+                  <button
+                    aria-controls="connection-panel"
+                    aria-pressed={connectionMode === key}
+                    className="mode-tab"
+                    id={`${key}-tab`}
+                    key={key}
+                    onClick={() => setConnectionMode(key)}
+                    type="button"
+                  >
+                    <span>{mode.label}</span>
+                    <small>{mode.status}</small>
+                  </button>
+                ))}
+              </div>
+
+              <div
+                aria-atomic="true"
+                aria-live="polite"
+                className="connection-panel"
+                id="connection-panel"
+                key={connectionMode}
+              >
+                <p>{activeMode.status}</p>
+                <h3>{activeMode.title}</h3>
+                <p>{activeMode.body}</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="section connection-section">
-          <div className="section-inner">
-            <header className="section-heading connection-heading">
-              <p className="section-kicker">Connection modes</p>
-              <h2>Start where you are connected.</h2>
+        <section className="section assurance-section" id="privacy">
+          <div className="section-inner" data-reveal>
+            <header className="section-heading assurance-heading">
+              <p className="section-kicker">Private, open, honest</p>
+              <h2>No account. No analytics. No Waypoint-operated server.</h2>
             </header>
 
-            <div className="mode-grid">
-              <article className="mode">
-                <div className="mode-meta">
-                  <p>Wi-Fi</p>
-                  <span className="mode-status mode-status-recommended">
-                    Recommended
-                  </span>
-                </div>
-                <h3>Choose a location and tap Start spoofing.</h3>
+            <div className="assurance-grid">
+              <article className="assurance-item">
+                <p className="assurance-label">Your pairing record</p>
+                <h3>Protected on your iPhone.</h3>
                 <p>
-                  Waypoint prepares the device and opens the simulation. Airplane
-                  Mode is not required.
+                  After import, it is stored with iOS file protection and excluded
+                  from backups. Treat it like a secret and never share it.
                 </p>
+                <a className="text-link text-link-light" href={links.privacy}>
+                  Privacy and data flow
+                </a>
               </article>
 
-              <article className="mode">
-                <div className="mode-meta">
-                  <p>Mobile data</p>
-                  <span className="mode-status">Experimental</span>
-                </div>
-                <h3>Keep Wi-Fi off and follow the guided handoff.</h3>
+              <article
+                className="assurance-item"
+                id="limitations"
+              >
+                <p className="assurance-label">Before you rely on it</p>
+                <h3>Simulation remains detectable.</h3>
                 <p>
-                  Turn Wi-Fi off, confirm mobile data works, then follow the two
-                  Airplane Mode prompts. Waypoint verifies that the retained
-                  session still responds after 4G or 5G returns.
+                  Apps can reject a simulated location or compare it with other
+                  signals. Wi-Fi is the primary path; mobile-data start remains
+                  experimental.
                 </p>
+                <a
+                  className="text-link text-link-light"
+                  href={links.limitations}
+                >
+                  Compatibility details
+                </a>
               </article>
             </div>
 
-            <p className="connection-note">
-              Cellular reliability depends on the device and current iOS network
-              state. If Waypoint is terminated, LocalDevVPN restarts, the iPhone
-              reboots, or iOS closes the retained session, run the guided start
-              again.
-            </p>
+            <div className="architecture-note">
+              <p>How it connects</p>
+              <p>
+                Waypoint uses idevice and LocalDevVPN to reach Apple&apos;s DVT
+                LocationSimulation service, which feeds Core Location apps.
+              </p>
+            </div>
           </div>
         </section>
 
-        <section className="section trust-section" id="privacy">
-          <div className="section-inner trust-layout">
-            <header className="section-heading trust-heading">
-              <p className="section-kicker">Privacy by architecture</p>
-              <h2>Waypoint does not send your pairing record to its own server.</h2>
-            </header>
-
-            <div className="trust-copy">
-              <p className="lead-copy">
-                Waypoint has no account system, analytics, or Waypoint-operated
-                server. After import, the pairing record is stored in Application
-                Support with iOS file protection, mode 0600, and backup exclusion.
-                Treat it like a secret and never share it.
-              </p>
+        <section className="cta-section">
+          <div className="section-inner cta-inner" data-reveal>
+            <div>
+              <p className="section-kicker">Open source · GNU AGPL v3</p>
+              <h2>Download it or inspect every line.</h2>
               <p>
-                Apple MapKit supplies maps and search. Developer-support files are
-                normally downloaded once from{` `}
-                <a href={links.developerSupport}>DeveloperDiskImage</a>, cached
-                on-device, and may need to be mounted again after an iPhone
-                reboot. LocalDevVPN exposes the developer service through an
-                on-device VPN.
+                Compatibility reports, reproducible bugs, and focused pull
+                requests are welcome.
               </p>
-              <p>
-                Importing from Files is recommended. Optional SideStore import
-                passes the record through a custom callback URL that may appear in
-                URL or debug logs.
-              </p>
-              <a className="text-link text-link-dark" href={links.privacy}>
-                Read the privacy and data-flow details
-              </a>
             </div>
 
-            <ol
-              className="architecture"
-              aria-label="Waypoint architecture"
-              role="list"
-            >
-              <li>Waypoint map</li>
-              <li>idevice</li>
-              <li>LocalDevVPN</li>
-              <li>Apple DVT LocationSimulation</li>
-              <li>Core Location apps</li>
-            </ol>
-          </div>
-        </section>
-
-        <section className="section limits-section" id="limitations">
-          <div className="section-inner limits-layout">
-            <header className="section-heading limits-heading">
-              <p className="section-kicker">Be clear about simulation</p>
-              <h2>Know what Waypoint can—and cannot—change.</h2>
-              <a className="text-link" href={links.limitations}>
-                Read compatibility details
+            <div className="hero-actions cta-actions">
+              <a className="button button-primary" href={links.download}>
+                Download unsigned IPA
               </a>
-            </header>
-
-            <ul className="limit-list" role="list">
-              {limits.map((limit) => (
-                <li key={limit}>{limit}</li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="section closing-section">
-          <div className="section-inner closing-inner">
-            <p className="section-kicker">Open source</p>
-            <h2>Inspect it. Build it. Improve it.</h2>
-            <p>
-              Waypoint is open source under the GNU AGPL v3. Compatibility
-              results, reproducible bug reports, and focused pull requests are
-              welcome.
-            </p>
-            <div className="hero-actions closing-actions">
-              <a className="button button-primary" href={links.github}>
+              <a className="button button-secondary" href={links.github}>
                 View source
-              </a>
-              <a className="button button-secondary" href={links.issues}>
-                Report an issue
               </a>
             </div>
           </div>
