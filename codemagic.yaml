@@ -7,8 +7,15 @@ workflows:
     environment:
       xcode: 26.0
 
-    # Intentionally no webhook triggers. The owner-gated GitHub Action queues
-    # this workflow through Codemagic's API.
+    # Only the owner-gated GitHub Action updates this dedicated branch.
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: codemagic-build
+          include: true
+          source: true
+      cancel_previous_builds: true
 
     scripts:
       - name: Install XcodeGen

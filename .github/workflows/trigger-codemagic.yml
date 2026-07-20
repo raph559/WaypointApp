@@ -6,6 +6,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: codemagic-owner-trigger
+  cancel-in-progress: false
+
 jobs:
   reject-unauthorized-request:
     name: Reject unauthorized request
@@ -28,51 +32,33 @@ jobs:
       github.triggering_actor == github.repository_owner &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: codemagic-owner
     timeout-minutes: 3
+    permissions:
+      contents: write
 
     steps:
-      - name: Trigger Waypoint build
-        env:
-          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
-          CODEMAGIC_APP_ID: ${{ vars.CODEMAGIC_APP_ID }}
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Update the Codemagic trigger branch
         run: |
           set -euo pipefail
 
-          if [[ -z "${CODEMAGIC_API_TOKEN:-}" ]]; then
-            echo "::error::Missing CODEMAGIC_API_TOKEN in the codemagic-owner environment."
-            exit 1
-          fi
+          git config user.name "Waypoint GitHub Actions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty \
+            --message "Trigger Codemagic build from GitHub run $GITHUB_RUN_ID"
+          git push --force origin HEAD:refs/heads/codemagic-build
 
-          if [[ -z "${CODEMAGIC_APP_ID:-}" ]]; then
-            echo "::error::Missing CODEMAGIC_APP_ID in the codemagic-owner environment."
-            exit 1
-          fi
-
-          payload="$(jq -n \
-            --arg app_id "$CODEMAGIC_APP_ID" \
-            --arg workflow_id "waypoint-unsigned" \
-            --arg branch "main" \
-            '{appId: $app_id, workflowId: $workflow_id, branch: $branch}')"
-
-          response="$(curl \
-            --fail-with-body \
-            --silent \
-            --show-error \
-            --request POST \
-            --header "Content-Type: application/json" \
-            --header "x-auth-token: $CODEMAGIC_API_TOKEN" \
-            --data "$payload" \
-            https://api.codemagic.io/builds)"
-
-          build_id="$(jq -er '.buildId' <<< "$response")"
-
-          echo "Codemagic build queued: $build_id"
+          trigger_commit="$(git rev-parse HEAD)"
           {
-            echo "### Codemagic build queued"
+            echo "### Codemagic webhook triggered"
             echo
-            echo "- Build ID: \`$build_id\`"
             echo "- Workflow: \`waypoint-unsigned\`"
-            echo "- Branch: \`main\`"
-            echo "- [Open Waypoint in Codemagic](https://codemagic.io/app/$CODEMAGIC_APP_ID)"
+            echo "- Source: current \`main\`"
+            echo "- Trigger branch: \`codemagic-build\`"
+            echo "- Trigger commit: \`$trigger_commit\`"
           } >> "$GITHUB_STEP_SUMMARY"

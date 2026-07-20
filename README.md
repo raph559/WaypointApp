@@ -346,24 +346,15 @@ automatically for pushes to <code>main</code> and pull requests targeting
 <details>
 <summary><strong>Codemagic</strong></summary>
 
-Codemagic webhook triggers are intentionally disabled. The repository owner can
-queue the <code>waypoint-unsigned</code> workflow from
-**Actions → Trigger Codemagic build → Run workflow**. The Action always builds
-<code>main</code>; requests from any other account or branch are rejected.
+The repository owner can queue the <code>waypoint-unsigned</code> workflow from
+**Actions → Trigger Codemagic build → Run workflow**. Requests from any other
+account or branch are rejected.
 
-One-time owner setup:
-
-1. In Codemagic, copy the app ID from
-   <code>https://codemagic.io/app/APP_ID</code> and create an API token under
-   **Account settings → API token**.
-2. In GitHub, create an environment named <code>codemagic-owner</code> under
-   **Settings → Environments**.
-3. Restrict its deployment branch to <code>main</code>, add the repository owner
-   as the required reviewer, and keep self-review allowed so the owner can
-   approve their own requested build.
-4. Add <code>CODEMAGIC_APP_ID</code> as an environment variable and
-   <code>CODEMAGIC_API_TOKEN</code> as an environment secret. Never put the API
-   token in the repository, workflow YAML, or logs.
+The Action creates an empty commit from the current <code>main</code> source and
+updates the dedicated <code>codemagic-build</code> branch. Codemagic listens only
+for pushes to that branch. Regular pushes, pull requests, tags, and public
+contributors therefore cannot start a Codemagic build. No Codemagic API token
+or GitHub secret is required.
 
 The resulting unsigned IPA is stored as a Codemagic build artifact for
 SideStore.
