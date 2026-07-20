@@ -47,9 +47,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Remove the obsolete branch used by the previous trigger design.
-          git push origin --delete codemagic-build 2>/dev/null || true
-
           # Recreate one fixed tag at the current main commit. Recreating the tag
           # emits a tag-created webhook without adding commits or branches.
           git push origin --delete refs/tags/codemagic-build 2>/dev/null || true
