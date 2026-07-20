@@ -36,6 +36,18 @@ body:
       required: true
 
   - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method
+      options:
+        - SideStore
+        - AltStore Classic / AltServer
+        - Xcode / source build
+        - Other signing or sideloading method
+    validations:
+      required: true
+
+  - type: dropdown
     id: connection
     attributes:
       label: Connection tested
@@ -87,4 +99,4 @@ body:
     id: notes
     attributes:
       label: Additional notes
-      description: Optional sanitized screenshots or details about SideStore, LocalDevVPN, notifications, or battery behavior.
+      description: Optional sanitized screenshots or details about the signing method, LocalDevVPN, notifications, or battery behavior.

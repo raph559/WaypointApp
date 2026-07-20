@@ -41,23 +41,30 @@ struct SetupView: View {
             }
 
             Section {
-                Menu {
-                    Button {
-                        isChoosingPairingFile = true
-                    } label: {
-                        Label("Choose from Files", systemImage: "folder")
-                    }
+                Group {
+                    if model.isSideStoreAvailable {
+                        Menu {
+                            Button {
+                                isChoosingPairingFile = true
+                            } label: {
+                                Label("Choose Pairing File", systemImage: "folder")
+                            }
 
-                    Button {
-                        isSideStoreConfirmationPresented = true
-                    } label: {
-                        Label("Import from SideStore", systemImage: "arrow.up.forward.app")
+                            Button {
+                                isSideStoreConfirmationPresented = true
+                            } label: {
+                                Label("Import with SideStore", systemImage: "arrow.up.forward.app")
+                            }
+                        } label: {
+                            pairingImportLabel
+                        }
+                    } else {
+                        Button {
+                            isChoosingPairingFile = true
+                        } label: {
+                            pairingImportLabel
+                        }
                     }
-                } label: {
-                    Label(
-                        model.pairingState.isReady ? "Replace Pairing Record" : "Import Pairing Record",
-                        systemImage: "doc.badge.plus"
-                    )
                 }
                 .disabled(model.isPreparing || model.simulatedCoordinate != nil)
 
@@ -69,7 +76,7 @@ struct SetupView: View {
             } header: {
                 Text("Device Setup")
             } footer: {
-                Text("Choose Files for the most private pairing import.")
+                Text(model.isSideStoreAvailable ? "Files is recommended. SideStore is optional." : "Import a pairing record created for this iPhone.")
             }
 
             Section {
@@ -126,17 +133,24 @@ struct SetupView: View {
             onCompletion: model.importPairingFile
         )
         .confirmationDialog(
-            "Import from SideStore?",
+            "Import with SideStore?",
             isPresented: $isSideStoreConfirmationPresented,
             titleVisibility: .visible
         ) {
-            Button("Import from SideStore") {
+            Button("Open SideStore") {
                 model.requestPairingFromSideStore()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Pairing records are sensitive. SideStore sends yours through a callback URL that may appear in debug logs. Choose Files for better privacy.")
+            Text("SideStore passes the pairing record through a callback URL that may appear in its logs. Use Choose Pairing File for better privacy.")
         }
+    }
+
+    private var pairingImportLabel: some View {
+        Label(
+            model.pairingState.isReady ? "Replace Pairing Record" : "Import Pairing Record",
+            systemImage: "doc.badge.plus"
+        )
     }
 
     private var pairingDetail: String {

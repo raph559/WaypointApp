@@ -114,7 +114,7 @@ jobs:
           printf '%s\n' \
             "## Waypoint $version" \
             "" \
-            "Unsigned Waypoint IPA for installation with SideStore." \
+            "Unsigned Waypoint IPA. Sign it with a compatible iOS signing method before installation; SideStore is supported but optional." \
             "" \
             "### Included" \
             "" \
@@ -127,7 +127,7 @@ jobs:
             "### Install" \
             "" \
             "1. Download $asset below." \
-            "2. Open it with SideStore and install it." \
+            "2. Sign and install it with SideStore, AltStore Classic/AltServer, or another compatible method." \
             "3. Follow the first-time setup guide: https://github.com/$GITHUB_REPOSITORY#first-time-setup" \
             "" \
             "> [!NOTE]" \

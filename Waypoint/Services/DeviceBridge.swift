@@ -124,7 +124,7 @@ final class DeviceBridge: @unchecked Sendable {
         var pairingHandle: OpaquePointer?
         try consume(
             pairingPath.withCString { rp_pairing_file_read($0, &pairingHandle) },
-            fallback: "The pairing file could not be read. Import a fresh file from SideStore."
+            fallback: "The pairing file could not be read. Import a fresh pairing record for this iPhone."
         )
         guard let pairingHandle else {
             throw DeviceBridgeError.message("The pairing file did not create a valid pairing record.")

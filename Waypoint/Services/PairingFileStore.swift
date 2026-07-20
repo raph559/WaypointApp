@@ -56,6 +56,6 @@ enum PairingFileError: LocalizedError {
     case invalidPayload
 
     var errorDescription: String? {
-        "SideStore returned an empty or invalid pairing file."
+        "The pairing record is empty or invalid."
     }
 }

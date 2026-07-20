@@ -73,16 +73,16 @@ struct CellularStartView: View {
         }
         .interactiveDismissDisabled(true)
         .confirmationDialog(
-            "Import from SideStore?",
+            "Import with SideStore?",
             isPresented: $isSideStoreConfirmationPresented,
             titleVisibility: .visible
         ) {
-            Button("Continue to SideStore") {
+            Button("Open SideStore") {
                 model.requestPairingFromSideStore()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Pairing records are sensitive. SideStore sends yours through a callback URL that may appear in SideStore debug logs. Choose Files instead if you prefer the safer option.")
+            Text("SideStore passes the pairing record through a callback URL that may appear in its logs. Use Choose Pairing File for better privacy.")
         }
         .fileImporter(
             isPresented: $isChoosingPairingFile,
@@ -144,31 +144,35 @@ struct CellularStartView: View {
         case .needsPairing:
             VStack(spacing: 11) {
                 Button {
-                    isSideStoreConfirmationPresented = true
+                    isChoosingPairingFile = true
                 } label: {
-                    Label("Import from SideStore", systemImage: "arrow.up.forward.app.fill")
+                    Label("Choose Pairing File", systemImage: "folder.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(model.isPreparing)
 
-                Button {
-                    isChoosingPairingFile = true
-                } label: {
-                    Label("Choose from Files", systemImage: "folder.fill")
-                        .frame(maxWidth: .infinity)
+                if model.isSideStoreAvailable {
+                    Button {
+                        isSideStoreConfirmationPresented = true
+                    } label: {
+                        Label("Import with SideStore", systemImage: "arrow.up.forward.app.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(model.isPreparing)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .disabled(model.isPreparing)
 
                 if model.isPreparing {
                     ProgressView("Importing pairing record…")
                         .font(.footnote)
                 }
 
-                Text("Your pairing record is stored only on this iPhone. Files import offers the best privacy.")
+                Text(model.isSideStoreAvailable
+                    ? "Use a pairing file created for this iPhone. SideStore is optional."
+                    : "Use a pairing file created for this iPhone.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -278,7 +282,7 @@ struct CellularStartView: View {
                 symbol: "doc.badge.plus",
                 color: .blue,
                 title: "One-Time Setup",
-                message: "Waypoint needs this iPhone’s pairing record once. Developer Mode must already be enabled in Settings.",
+                message: "Import this iPhone’s pairing record. Developer Mode must already be enabled in Settings.",
                 showsActivity: false
             )
 

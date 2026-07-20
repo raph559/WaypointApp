@@ -15,6 +15,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var cellularHandoffState: CellularHandoffState = .idle
     @Published private(set) var cellularLaunchState: CellularLaunchState = .idle
     @Published private(set) var isLocalDevVPNInstalled = false
+    @Published private(set) var isSideStoreAvailable = false
     @Published private(set) var disconnectAlertsEnabled = false
     @Published private(set) var disconnectAlertsDenied = false
     @Published private(set) var isUpdatingDisconnectAlerts = false
@@ -107,6 +108,7 @@ final class AppModel: ObservableObject {
 
     func refreshLocalState() {
         refreshLocalDevVPNAvailability()
+        refreshSideStoreAvailability()
         refreshDisconnectAlertSettings()
         pairingState = PairingFileStore.exists ? .ready : .required
 
@@ -149,20 +151,18 @@ final class AppModel: ObservableObject {
     }
 
     func requestPairingFromSideStore() {
-        var components = URLComponents()
-        components.scheme = "sidestore"
-        components.host = "pairing"
-        components.queryItems = [URLQueryItem(name: "urlname", value: Self.pairingCallbackScheme)]
-
-        guard let url = components.url else {
-            presentError(title: "Could Not Open SideStore", message: "The pairing-export URL could not be created.")
+        guard let url = sideStorePairingURL() else {
+            presentError(
+                title: "SideStore Import Unavailable",
+                message: "Waypoint could not create the SideStore import request. Use Choose Pairing File instead."
+            )
             return
         }
         UIApplication.shared.open(url) { [weak self] didOpen in
             guard !didOpen else { return }
             Task { @MainActor in
                 self?.pairingImportFailed(
-                    "SideStore could not be opened. Open it manually, export its .mobiledevicepairing file, then choose the file in Waypoint."
+                    "SideStore could not be opened. Use Choose Pairing File instead."
                 )
             }
         }
@@ -191,6 +191,22 @@ final class AppModel: ObservableObject {
             return
         }
         isLocalDevVPNInstalled = UIApplication.shared.canOpenURL(url)
+    }
+
+    private func refreshSideStoreAvailability() {
+        guard let url = sideStorePairingURL() else {
+            isSideStoreAvailable = false
+            return
+        }
+        isSideStoreAvailable = UIApplication.shared.canOpenURL(url)
+    }
+
+    private func sideStorePairingURL() -> URL? {
+        var components = URLComponents()
+        components.scheme = "sidestore"
+        components.host = "pairing"
+        components.queryItems = [URLQueryItem(name: "urlname", value: Self.pairingCallbackScheme)]
+        return components.url
     }
 
     private func localDevVPNEnableURL() -> URL? {
@@ -577,6 +593,7 @@ final class AppModel: ObservableObject {
     func applicationBecameActive() {
         isApplicationActive = true
         refreshLocalDevVPNAvailability()
+        refreshSideStoreAvailability()
         refreshDisconnectAlertSettings()
         if isLocalDevVPNInstalled,
            case .needsLocalDevVPN = cellularLaunchState {
@@ -1108,7 +1125,7 @@ final class AppModel: ObservableObject {
         }
         guard PairingFileStore.exists else {
             pairingState = .required
-            throw DeviceBridgeError.message("Import the SideStore pairing record first.")
+            throw DeviceBridgeError.message("Import this iPhone’s pairing record first.")
         }
 
         isPreparing = true
@@ -1224,7 +1241,7 @@ final class AppModel: ObservableObject {
     private func pairingImportFailed(_ message: String) {
         if let operationID = cellularLaunchOperationID {
             failCellularLaunch(
-                "Waypoint could not import the pairing record. Choose a fresh file from SideStore or Files, then try again.\n\n\(message)",
+                "Waypoint could not import the pairing record. Choose a fresh pairing record for this iPhone, then try again.\n\n\(message)",
                 operationID: operationID
             )
         } else {

@@ -2,7 +2,7 @@
 
 Waypoint is maintained on a best-effort basis. Community support does not carry
 a guaranteed response time, and cellular behavior can vary with the iPhone,
-iOS build, VPN state, and SideStore environment.
+iOS build, VPN state, installation method, and signing and provisioning state.
 
 ## Before asking for help
 

@@ -44,8 +44,9 @@ body:
       label: Installation method
       options:
         - SideStore
-        - Built from source
-        - Other sideloading method
+        - AltStore Classic / AltServer
+        - Xcode / source build
+        - Other signing or sideloading method
     validations:
       required: true
 
@@ -120,4 +121,4 @@ body:
     id: additional-context
     attributes:
       label: Additional context
-      description: Mention recent iPhone restarts, SideStore refreshes, VPN interruptions, or destination apps when relevant.
+      description: Mention recent iPhone restarts, app refreshes or re-signing, provisioning-profile expirations, VPN interruptions, or destination apps when relevant.

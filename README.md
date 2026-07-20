@@ -97,10 +97,14 @@ preparation automatically.
 You'll need:
 
 - An iPhone running **iOS 26** with **Developer Mode** enabled
-- [SideStore](https://sidestore.io/) installed and able to refresh apps
+- A compatible way to sign and install the unsigned IPA, such as
+  [SideStore](https://sidestore.io/) or
+  [AltStore Classic/AltServer](https://faq.altstore.io/altstore-classic/altserver);
+  alternatively, build and sign Waypoint from source with Xcode
 - [LocalDevVPN](https://apps.apple.com/app/id6755608044) installed, with its
   one-time VPN permission accepted
-- A valid <code>.mobiledevicepairing</code> file for the iPhone
+- A valid remote pairing record for the iPhone, usually a
+  <code>.mobiledevicepairing</code> or compatible <code>.plist</code> file
 - Internet access for the one-time developer-image download and MapKit search
 
 For the experimental cellular-only start, mobile data must be working before
@@ -111,13 +115,26 @@ normally only need to be mounted again after restarting the iPhone.
 
 ## Download and install
 
-Waypoint is distributed as an unsigned IPA. SideStore signs it with your Apple
-ID during installation.
+Waypoint releases contain an unsigned IPA. iOS requires it to be signed before
+installation. SideStore is supported, but it is not a runtime dependency.
 
 1. Open the [latest Waypoint release](https://github.com/raph559/WaypointApp/releases/latest)
    and download its <code>.ipa</code> asset.
-2. Open or share the IPA with SideStore.
-3. Install it as a normal SideStore app.
+2. Sign and install it with SideStore, AltStore Classic/AltServer, or another
+   compatible iOS signing method.
+3. Keep the app signed and its provisioning profile valid according to the
+   method you selected.
+
+To use Xcode instead, follow [Build from source](#build-from-source). Xcode
+builds and signs the app directly rather than installing the unsigned release
+asset.
+
+> [!TIP]
+> For a SideStore-free setup, install Waypoint with AltStore Classic/AltServer
+> or build it with Xcode, create the pairing record with
+> [idevice_pair](https://github.com/jkcoxson/idevice_pair), then import it using
+> **Choose Pairing File**. LocalDevVPN is still required by the current
+> connection architecture.
 
 The same release page contains the release notes and SHA-256 checksum.
 
@@ -126,9 +143,9 @@ The same release page contains the release notes and SHA-256 checksum.
 ### Recommended: start on Wi-Fi
 
 1. Enable **Developer Mode** in iOS Settings and restart when prompted.
-2. Install Waypoint through SideStore. If LocalDevVPN is missing, Waypoint links
-   directly to its App Store page and continues setup when you return. Complete
-   LocalDevVPN's one-time VPN permission if iOS asks.
+2. Install Waypoint using your preferred signing method. If LocalDevVPN is
+   missing, Waypoint links directly to its App Store page and continues setup
+   when you return. Complete LocalDevVPN's one-time VPN permission if iOS asks.
 3. Keep Wi-Fi connected, choose a location, and tap **Start spoofing**.
 4. If prompted, import this iPhone's pairing record. Waypoint downloads about
    17 MB of developer-support files once, opens LocalDevVPN, and prepares the
@@ -139,21 +156,28 @@ Airplane Mode is not needed when starting on Wi-Fi.
 
 ### Importing the pairing record
 
-SideStore maintains the pairing record it uses for this iPhone. When Waypoint
-asks for it, choose one of these options:
+Waypoint needs a valid pairing record created for this iPhone. Generate or
+export a compatible remote-pairing file, then transfer it to the iPhone. When
+Waypoint asks for it:
 
-- **Import from SideStore** asks SideStore to return the record directly to
-  Waypoint.
-- **Choose from Files** imports a <code>.mobiledevicepairing</code> file that you
-  previously exported from SideStore. This is the more private option.
+- **Choose Pairing File** imports the record from Files. This is recommended
+  because it avoids placing the record in a callback URL.
+- **Import with SideStore** is an optional shortcut shown only when SideStore is
+  installed. It asks SideStore to return its existing record directly.
+
+If you do not already have a record, the cross-platform
+[idevice_pair](https://github.com/jkcoxson/idevice_pair) utility can generate
+one over USB. Keep the iPhone unlocked, trust the computer, choose
+<code>RPPairing</code> for iOS 17.4 or later, save the generated record, and
+transfer it to Files on the iPhone.
 
 The same controls remain available under **Settings → Device Setup** if the
 record needs to be replaced.
 
 > [!CAUTION]
 > A pairing record contains trusted device credentials. Use only the record for
-> your own iPhone. Never share it, post it in an issue, or include it in logs or
-> screenshots.
+> your own iPhone, transfer and store it securely, and never share it, post it in
+> an issue, or include it in logs or screenshots.
 
 ### Without Wi-Fi: cellular-only start — experimental
 
@@ -205,9 +229,10 @@ simulation while the phone is temporarily offline, retains that same session,
 and verifies that it still responds after 4G/5G returns. It never claims success
 merely because mobile data reappeared.
 
-The retained-session mechanism and guided workflow have been confirmed through
-SideStore on a physical iPhone running iOS 26. Results can still vary with the
-device and current iOS network state.
+The retained-session mechanism and guided workflow have been confirmed on a
+physical iPhone running iOS 26 using a SideStore-installed build. SideStore was
+only the installation method; results can still vary with the device and
+current iOS network state.
 
 > [!WARNING]
 > Cellular operation remains device-dependent. An app termination, VPN restart,
@@ -245,9 +270,10 @@ Waypoint:
 - Excludes the record from device backups
 - Does not log the record in Waypoint's own code
 
-Importing through Files is the recommended option. The direct SideStore callback
-is more convenient, but it places the pairing data in a custom URL that may be
-exposed by URL or debug logging.
+Importing through Files is the recommended option. When SideStore is installed,
+Waypoint also offers an optional direct callback. It is more convenient, but it
+places the pairing data in a custom URL that may be exposed by URL or debug
+logging.
 
 Waypoint has no account system, analytics, or Waypoint-operated server. The app
 does use these external services during normal operation:
@@ -256,7 +282,8 @@ does use these external services during normal operation:
 - Developer-image files are downloaded from the
   [DeveloperDiskImage](https://github.com/doronz88/DeveloperDiskImage)
   repository and cached on-device.
-- SideStore supplies the pairing record when direct import is selected.
+- SideStore supplies the pairing record only when its optional direct import is
+  selected.
 - LocalDevVPN exposes the iPhone's developer service through an on-device VPN.
 - Disconnect warnings are local iOS notifications and do not require an
   internet connection.
@@ -277,8 +304,8 @@ flowchart LR
 <details>
 <summary><strong>Technical overview</strong></summary>
 
-1. Waypoint imports this iPhone's pairing record from Files or through the
-   explicit SideStore callback.
+1. Waypoint imports this iPhone's pairing record from Files or, optionally,
+   through the explicit SideStore callback.
 2. LocalDevVPN exposes the remote-pairing service locally at
    <code>10.7.0.1:49152</code>.
 3. Waypoint uses the MIT-licensed <code>idevice</code> FFI to establish remote
@@ -309,8 +336,8 @@ server.
 - Destination apps may reject simulated locations or compare them with IP
   address, time zone, Wi-Fi, cellular, or motion data.
 - Force-quitting Waypoint ends its keepalive.
-- VPN interruption, memory pressure, background suspension, or SideStore
-  profile expiry can stop the DVT connection.
+- VPN interruption, memory pressure, background suspension, app re-signing or
+  reinstallation, or provisioning-profile expiry can stop the DVT connection.
 - On the tested iOS 26 device, fresh DVT connections failed on cellular-only
   paths. The no-Wi-Fi handoff is experimental and may fail if iOS closes the
   already-open session when cellular returns.
@@ -322,6 +349,32 @@ server.
   services you test.
 
 ## Build from source
+
+<details>
+<summary><strong>Install directly with Xcode</strong></summary>
+
+This path builds, signs, and installs Waypoint without SideStore:
+
+1. Install Xcode 26 and XcodeGen on a Mac.
+2. Fetch the pinned device library and generate the project:
+
+~~~sh
+bash scripts/fetch-idevice.sh
+xcodegen generate
+open Waypoint.xcodeproj
+~~~
+
+3. In Xcode, select the **Waypoint** target, open **Signing & Capabilities**,
+   choose your Apple development team, and set a unique bundle identifier.
+4. Connect and unlock the iPhone, trust the Mac if prompted, select the iPhone
+   as the run destination, and press **Run**.
+
+Xcode then signs and installs the app directly. A free Personal Team can be
+used for a personal device, but its provisioning profile expires after seven
+days and the app must be rebuilt and reinstalled. See
+[Apple's developer-account documentation](https://developer.apple.com/help/account/basics/about-your-developer-account/).
+
+</details>
 
 <details>
 <summary><strong>GitHub Actions</strong></summary>
@@ -356,15 +409,16 @@ or empty commit is created. Regular pushes, pull requests, other tags, and
 public contributors cannot start a Codemagic build. No Codemagic API token or
 GitHub secret is required.
 
-The resulting unsigned IPA is stored as a Codemagic build artifact for
-SideStore.
+The resulting unsigned IPA is stored as a Codemagic build artifact for signing
+and installation with any compatible method.
 
 </details>
 
 <details>
-<summary><strong>Local Mac</strong></summary>
+<summary><strong>Create an unsigned IPA locally</strong></summary>
 
-Install Xcode 26 and XcodeGen, then run:
+To reproduce the unsigned release packaging on a Mac, install Xcode 26 and
+XcodeGen, then run:
 
 ~~~sh
 bash scripts/fetch-idevice.sh
@@ -402,7 +456,8 @@ devices and iOS network states.
 
 For a new iOS release or destination app, test pairing import, device
 preparation, Start/Move/Stop, backgrounding, lock/unlock, VPN interruption,
-SideStore refresh, and developer-image remount after reboot.
+app refresh or re-signing, provisioning-profile expiry, and developer-image
+remount after reboot.
 
 ## Contributing
 
@@ -410,7 +465,7 @@ Bug reports, compatibility results, feature ideas, and pull requests are
 welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), then open a
 [GitHub issue](https://github.com/raph559/WaypointApp/issues) with the iOS
 version, installation method, and reproducible steps when reporting a problem.
-Never attach a pairing record or an unredacted SideStore callback URL.
+Never attach a pairing record or an unredacted pairing callback URL.
 
 Before submitting a pull request, keep the change focused and confirm that the
 unsigned IPA workflow builds successfully. The Xcode project is generated from
