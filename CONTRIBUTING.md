@@ -40,6 +40,33 @@ downloaded vendor binaries, or any device-specific pairing material.
 4. Update documentation when behavior, requirements, or setup changes.
 5. Open a pull request using the repository template.
 
+## Commit messages
+
+Waypoint uses [Conventional Commits](https://www.conventionalcommits.org/) with
+a required scope:
+
+```text
+<type>(<scope>): <description>
+```
+
+Use `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`,
+or `revert` as the type. Choose a concise lowercase scope that identifies the
+affected area, such as `map`, `spoofing`, `cellular`, `notifications`,
+`onboarding`, `codemagic`, `release`, or `readme`. Keep the description
+lowercase, imperative, and without a trailing period.
+
+Examples:
+
+```text
+feat(map): add search result previews
+fix(cellular): restore spoofing after reconnect
+ci(codemagic): trigger builds from a release tag
+docs(readme): clarify first-run setup
+```
+
+Mark breaking changes with `!` before the colon and explain them in a
+`BREAKING CHANGE:` footer.
+
 ## Validation
 
 At minimum, ensure the unsigned archive builds with Xcode 26. GitHub Actions

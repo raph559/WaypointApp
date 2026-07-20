@@ -20,6 +20,7 @@
 
 ## Checklist
 
+- [ ] My commits and pull request title follow `<type>(<scope>): <description>`.
 - [ ] This pull request is focused and follows the existing Swift/SwiftUI style.
 - [ ] User-facing behavior, requirements, and limitations are documented where needed.
 - [ ] I did not commit an IPA, generated Xcode project, build output, downloaded vendor binary, `.mobiledevicepairing` file, credentials, device tokens, private keys, UDIDs, or unredacted logs.
