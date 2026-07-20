@@ -6,17 +6,19 @@ Icon
 ._*
 
 # Xcode
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-*.xcworkspace/*
-!*.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/
+*.xcworkspace/
 xcuserdata/
 DerivedData/
+build/
+Payload/
+*.xcarchive/
+*.xcresult/
 *.moved-aside
 *.hmap
 *.ipa
 *.dSYM.zip
-*.dSYM
+*.dSYM/
 *.log
 .svn/
 
@@ -27,34 +29,9 @@ DerivedData/
 .swiftpm/
 .build/
 
-# Go
-bin/
-pkg/
-*.test
-*.out
-vendor/
-go.work
-
-# Python
-__pycache__/
-*.py[cod]
-
-# GoSpoofer built artifacts
-GoSpoofer/build/
-GoSpoofer/*.a
-
-# CocoaPods
-Pods/
-Podfile.lock
-
-# Carthage
-Carthage/Build/
-
-# Fastlane
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots
-fastlane/test_output
+# Downloaded idevice build inputs
+/Vendor/idevice/idevice.h
+/Vendor/idevice/libidevice_ffi.a
 
 # IDE
 .vscode/
@@ -69,8 +46,11 @@ fastlane/test_output
 *.pem
 *.key
 
-# Code signing
+# Device pairing and code signing
+*.mobiledevicepairing
+*.p12
 *.mobileprovision
+*.provisionprofile
 *.certSigningRequest
 
 # Temporary files

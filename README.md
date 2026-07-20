@@ -38,8 +38,8 @@
     </a>
     <a href="LICENSE">
       <img
-        src="https://img.shields.io/badge/license-MIT-blue"
-        alt="MIT License"
+        src="https://img.shields.io/badge/license-AGPL--3.0-blue"
+        alt="GNU AGPL v3 License"
       >
     </a>
   </p>
@@ -424,4 +424,4 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
 
 ## License
 
-Waypoint is open source under the [MIT License](LICENSE).
+Waypoint is open source under the [GNU Affero General Public License v3.0](LICENSE).

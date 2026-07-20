@@ -25,4 +25,4 @@
 - [ ] I did not commit an IPA, generated Xcode project, build output, downloaded vendor binary, `.mobiledevicepairing` file, credentials, device tokens, private keys, UDIDs, or unredacted logs.
 - [ ] New third-party code or assets include their source, license, and required attribution.
 - [ ] The change preserves clear disclosure that Waypoint uses software-simulated location.
-- [ ] I understand that my contribution is submitted under the repository's MIT License.
+- [ ] I understand that my contribution is submitted under the repository's GNU AGPL v3 License.

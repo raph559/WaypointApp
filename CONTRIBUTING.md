@@ -58,6 +58,7 @@ was not available, say so clearly in the pull request.
 
 ## Licensing
 
-Contributions are submitted under the repository's [MIT License](LICENSE).
+Contributions are submitted under the repository's
+[GNU Affero General Public License v3.0](LICENSE).
 Identify any third-party code or assets and include all required attribution and
 license notices.

@@ -114,36 +114,28 @@ jobs:
           printf '%s\n' \
             "## Waypoint $version" \
             "" \
-            "The current unsigned iOS 26 build of Waypoint for SideStore." \
+            "Unsigned Waypoint IPA for installation with SideStore." \
             "" \
-            "### Highlights" \
+            "### Included" \
             "" \
-            "- Refined V1 Settings with automatic preparation kept inside the Start flow" \
-            "- Separate explanations for disconnect alerts and background keepalive" \
-            "- Missing LocalDevVPN is detected before setup, with an App Store install button and automatic continuation" \
-            "- Explicit Notify If Spoof Stops switch with native iOS permission and Settings handling" \
-            "- Connection-aware Start button: Start spoofing on Wi-Fi and Start on mobile data on 4G/5G" \
-            "- Compact Settings screen with status, device setup, alerts, background, and troubleshooting controls" \
-            "- Guided Start on mobile data with automatic support-file caching, LocalDevVPN launch, device preparation, and retained-session verification" \
-            "- Only two guided system actions remain: turn Airplane Mode on, then off, while keeping Wi-Fi off" \
-            "- One-time SideStore or Files pairing import directly inside the guide" \
-            "- Native MapKit map with live place and address autocomplete" \
-            "- Tap or drag the pin, then start or move the simulated location" \
-            "- Visual and haptic Start, Move, Stop, and connection-loss feedback" \
-            "- Optional background keepalive and cautious watchdog alerts that work without internet" \
+            "- Map search with place and address suggestions" \
+            "- Tap or drag the pin, then start, move, or stop the simulated location" \
+            "- Guided pairing and developer-support setup" \
+            "- Recommended Wi-Fi start and experimental cellular-only handoff" \
+            "- Optional disconnect notifications and background keepalive" \
             "" \
             "### Install" \
             "" \
             "1. Download $asset below." \
-            "2. Import it into SideStore." \
-            "3. Turn Wi-Fi off, leave mobile data on, choose a location, and tap Start on mobile data." \
-            "4. Follow Waypoint's prompts to turn Airplane Mode on, then off." \
+            "2. Open it with SideStore and install it." \
+            "3. Follow the first-time setup guide: https://github.com/$GITHUB_REPOSITORY#first-time-setup" \
             "" \
-            "The retained-session mechanism and the guided 0.4.0 cellular flow were confirmed on a physical iPhone running iOS 26. Cellular support remains experimental across devices." \
+            "> [!NOTE]" \
+            "> Cellular-only start remains experimental and device-dependent. Starting on Wi-Fi is recommended." \
             "" \
-            "Waypoint uses Apple's software-simulated developer location. Destination apps can detect or reject it." \
+            "Waypoint uses Apple's software-simulated developer location. Apps can detect or reject simulated locations." \
             "" \
-            "**SHA-256:** $checksum" \
+            "SHA-256: $checksum" \
             > "$notes"
 
           if gh release view "$tag" >/dev/null 2>&1; then
