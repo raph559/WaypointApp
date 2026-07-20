@@ -346,13 +346,27 @@ automatically for pushes to <code>main</code> and pull requests targeting
 <details>
 <summary><strong>Codemagic</strong></summary>
 
-Import the repository into Codemagic, select the
-<code>waypoint-unsigned</code> workflow, and build the
-<code>main</code> branch with Xcode 26.0. The unsigned IPA is published as a
-build artifact for SideStore.
+Codemagic webhook triggers are intentionally disabled. The repository owner can
+queue the <code>waypoint-unsigned</code> workflow from
+**Actions → Trigger Codemagic build → Run workflow**. The Action always builds
+<code>main</code>; requests from any other account or branch are rejected.
 
-Automatic Codemagic webhook triggers are intentionally disabled. A build must
-be started manually by someone who has access to the app in Codemagic.
+One-time owner setup:
+
+1. In Codemagic, copy the app ID from
+   <code>https://codemagic.io/app/APP_ID</code> and create an API token under
+   **Account settings → API token**.
+2. In GitHub, create an environment named <code>codemagic-owner</code> under
+   **Settings → Environments**.
+3. Restrict its deployment branch to <code>main</code>, add the repository owner
+   as the required reviewer, and keep self-review allowed so the owner can
+   approve their own requested build.
+4. Add <code>CODEMAGIC_APP_ID</code> as an environment variable and
+   <code>CODEMAGIC_API_TOKEN</code> as an environment secret. Never put the API
+   token in the repository, workflow YAML, or logs.
+
+The resulting unsigned IPA is stored as a Codemagic build artifact for
+SideStore.
 
 </details>
 

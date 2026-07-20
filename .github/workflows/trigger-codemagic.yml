@@ -1,0 +1,78 @@
+name: Trigger Codemagic build
+run-name: Codemagic build requested by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reject-unauthorized-request:
+    name: Reject unauthorized request
+    if: >-
+      github.actor != github.repository_owner ||
+      github.triggering_actor != github.repository_owner ||
+      github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Explain restriction
+        run: |
+          echo "::error::Only the repository owner can trigger the Codemagic build from main."
+          exit 1
+
+  trigger-codemagic:
+    name: Queue owner build
+    if: >-
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: codemagic-owner
+    timeout-minutes: 3
+
+    steps:
+      - name: Trigger Waypoint build
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ vars.CODEMAGIC_APP_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${CODEMAGIC_API_TOKEN:-}" ]]; then
+            echo "::error::Missing CODEMAGIC_API_TOKEN in the codemagic-owner environment."
+            exit 1
+          fi
+
+          if [[ -z "${CODEMAGIC_APP_ID:-}" ]]; then
+            echo "::error::Missing CODEMAGIC_APP_ID in the codemagic-owner environment."
+            exit 1
+          fi
+
+          payload="$(jq -n \
+            --arg app_id "$CODEMAGIC_APP_ID" \
+            --arg workflow_id "waypoint-unsigned" \
+            --arg branch "main" \
+            '{appId: $app_id, workflowId: $workflow_id, branch: $branch}')"
+
+          response="$(curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "x-auth-token: $CODEMAGIC_API_TOKEN" \
+            --data "$payload" \
+            https://api.codemagic.io/builds)"
+
+          build_id="$(jq -er '.buildId' <<< "$response")"
+
+          echo "Codemagic build queued: $build_id"
+          {
+            echo "### Codemagic build queued"
+            echo
+            echo "- Build ID: \`$build_id\`"
+            echo "- Workflow: \`waypoint-unsigned\`"
+            echo "- Branch: \`main\`"
+            echo "- [Open Waypoint in Codemagic](https://codemagic.io/app/$CODEMAGIC_APP_ID)"
+          } >> "$GITHUB_STEP_SUMMARY"

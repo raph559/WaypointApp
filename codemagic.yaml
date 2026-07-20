@@ -7,8 +7,8 @@ workflows:
     environment:
       xcode: 26.0
 
-    # Intentionally no webhook triggers. Only someone with access to the
-    # Waypoint app in Codemagic can start this workflow manually.
+    # Intentionally no webhook triggers. The owner-gated GitHub Action queues
+    # this workflow through Codemagic's API.
 
     scripts:
       - name: Install XcodeGen
