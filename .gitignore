@@ -58,3 +58,10 @@ tmp/
 temp/
 logs/
 .superpowers/
+
+# Website dependencies and generated output
+/website/node_modules/
+/website/dist/
+/website/.npm-cache/
+/website/design-qa.md
+/website/AGENTS.md
