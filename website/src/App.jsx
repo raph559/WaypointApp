@@ -87,7 +87,7 @@ function useRevealMotion() {
     );
 
     elements.forEach((element) => {
-      if (element.getBoundingClientRect().top < window.innerHeight * 0.92) {
+      if (element.getBoundingClientRect().top < window.innerHeight * 0.98) {
         element.classList.add("is-visible");
       } else {
         observer.observe(element);
