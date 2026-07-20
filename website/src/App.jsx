@@ -229,7 +229,7 @@ export function App() {
               <a className="button button-primary" href={links.download}>
                 Download IPA
               </a>
-              <a className="button button-dark" href={links.setup}>
+              <a className="button button-secondary" href={links.setup}>
                 Setup guide
               </a>
             </div>

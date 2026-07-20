@@ -11,10 +11,8 @@
   --soft-white: #f4f5f2;
   --mint: #55d6b0;
   --mint-bright: #6fe0bd;
-  --mint-dark: #1b7f66;
   --muted: #a4aaa8;
   --line: #34393d;
-  --line-light: #c8ccc6;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -243,18 +241,6 @@ h1 {
   border-color: var(--soft-white);
 }
 
-.button-dark {
-  min-width: 166px;
-  color: var(--graphite);
-  background: transparent;
-  border-color: var(--graphite);
-}
-
-.button-dark:hover {
-  color: var(--soft-white);
-  background: var(--graphite);
-}
-
 .trust-line {
   margin: 28px 0 0;
   color: var(--muted);
@@ -390,9 +376,9 @@ h1 {
 }
 
 .mode-tab[aria-pressed="true"] {
-  color: var(--graphite);
-  background: var(--soft-white);
-  border-color: var(--soft-white);
+  color: var(--soft-white);
+  background: #23282e;
+  border-color: var(--mint);
 }
 
 .connection-panel {
@@ -420,20 +406,21 @@ h1 {
 }
 
 .setup-section {
-  color: var(--graphite);
-  background: var(--soft-white);
+  color: var(--soft-white);
+  background: var(--graphite-raised);
+  border-bottom: 1px solid var(--line);
 }
 
 .setup-section .section-kicker {
-  color: var(--mint-dark);
+  color: var(--mint);
 }
 
 .setup-section h2 {
-  color: var(--graphite);
+  color: var(--soft-white);
 }
 
 .setup-section a:focus-visible {
-  outline-color: var(--mint-dark);
+  outline-color: var(--mint);
 }
 
 .setup-inner {
@@ -446,14 +433,14 @@ h1 {
 .setup-copy {
   max-width: 760px;
   margin: 26px 0 0;
-  color: #505756;
+  color: #c1c7c4;
   font-size: clamp(1.08rem, 1.6vw, 1.3rem);
   line-height: 1.58;
   letter-spacing: -0.012em;
 }
 
 .setup-copy a {
-  color: var(--graphite);
+  color: var(--soft-white);
   font-weight: 720;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -470,8 +457,9 @@ h1 {
 
 .setup-facts li {
   padding: 9px 13px;
-  color: #39403f;
-  border: 1px solid var(--line-light);
+  color: #c7cdca;
+  background: #1d2227;
+  border: 1px solid #42484c;
   border-radius: 999px;
   font-size: 0.84rem;
   font-weight: 680;
