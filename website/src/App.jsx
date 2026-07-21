@@ -32,7 +32,7 @@ const links = {
 const iconUrl = `${import.meta.env.BASE_URL}waypoint-icon.png`;
 const heroPhoneUrl = `${import.meta.env.BASE_URL}waypoint-hero-phone.webp`;
 const setupIllustrationUrl = `${import.meta.env.BASE_URL}waypoint-setup-illustration.webp`;
-const journeyRouteUrl = `${import.meta.env.BASE_URL}waypoint-journey-route.png`;
+const journeySurfaceUrl = `${import.meta.env.BASE_URL}waypoint-journey-surface.webp`;
 
 const proofPoints = [
   { label: "Open source", icon: Code },
@@ -271,10 +271,10 @@ export function App() {
             <img
               className="journey-route-art"
               data-reveal
-              src={journeyRouteUrl}
+              src={journeySurfaceUrl}
               alt=""
-              width="720"
-              height="700"
+              width="1440"
+              height="430"
               loading="lazy"
             />
             <ol className="journey-list" role="list">

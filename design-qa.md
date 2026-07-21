@@ -3,12 +3,13 @@
 ## Evidence
 
 - Source visual truth: `/workspace/scratch/39bbb15352a6/generated_images/exec-dc0ecc7e-5244-4889-ba85-82cb62f379fe.png`
+- Focused journey-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-f521bcff-8e5f-4b19-a83c-907d4381bda3.png`
 - Rendered implementation: `http://terminal.local:4173/` in the cloud browser
 - Implementation screenshot evidence: inline browser-rendered captures from the local preview; the browser runtime did not expose a persistent filesystem path
 - Viewport: 1365 × 936, desktop dark theme
 - States reviewed: hero at rest, map journey after scroll reveal, setup section, both setup disclosures opened
 - Full-view evidence: the complete source mockup was reviewed alongside browser captures covering the full implemented page in three contiguous regions
-- Focused comparison evidence: source and implementation were emitted together for the hero, map journey, and setup regions
+- Focused comparison evidence: source and implementation were emitted together for the hero, revised horizontal map journey, and setup regions
 
 ## Findings
 
@@ -19,9 +20,9 @@
 ## Required fidelity surfaces
 
 - Fonts and typography: system display and text faces preserve the source hierarchy, compact weight contrast, tight display tracking, and two-line hero/setup wraps.
-- Spacing and layout rhythm: the asymmetric hero, editorial journey, rounded setup surface, 2 px borders, generous vertical rhythm, and compact footer match the approved direction without the removed mode block.
+- Spacing and layout rhythm: the asymmetric hero, compact journey header, shared horizontal journey surface, rounded setup section, 2 px borders, and compact footer match the approved direction without the removed mode block.
 - Colors and tokens: charcoal, slate, warm off-white, mint, coral, and dusty blue stay balanced; generated-image backgrounds were normalized to their parent surfaces so no hard rectangular matte remains.
-- Image quality: the generated phone, route, and setup illustration use purpose-sized raster assets. The hero and setup art use optimized WebP files; no placeholder, CSS-drawn, or handcrafted SVG artwork is used.
+- Image quality: the generated phone, wide map-route surface, and setup illustration use purpose-sized optimized raster assets. No placeholder, CSS-drawn, or handcrafted SVG artwork is used.
 - Copy and content: primary actions, installer links, pairing privacy, mobile-data steps, disconnect guidance, and supported platform language are accurate and concise. No deprecated cellular caveat label remains.
 - Icons and affordances: Phosphor icons are consistent, buttons and links have clear hover/focus behavior, and disclosure chevrons reflect open state.
 - Interactions: Setup navigation, both native disclosures, installer links, and stable latest-IPA links were exercised. Both disclosures opened successfully.
@@ -37,10 +38,13 @@
    - Fixes: normalized the raster backgrounds to the page and setup surface colors, then shipped optimized WebP assets.
    - Post-fix evidence: final hero and setup captures show continuous backgrounds around both illustrations.
 3. Earlier P2: the feature list lacked the distinctive route motif from the approved direction.
-   - Fix: added a generated raster route and aligned the numbered steps along it, with a simpler stacked fallback below 680 px.
-   - Post-fix evidence: final journey capture shows the mint/coral/blue sequence following the route without the removed connection-mode cards.
+   - Fix: added a generated raster route and aligned the numbered steps along it.
+   - Post-fix evidence: the route establishes the mint/coral/blue sequence without the removed connection-mode cards.
 4. User-directed content revision: removed the entire Wi-Fi/mobile comparison block and elevated mobile data to normal supported setup copy.
    - Post-fix evidence: DOM and visible-copy checks found zero deprecated caveat labels and zero connection-mode cards.
+5. Latest P2: the vertical journey layout left a large empty center and lower half, making the steps feel detached from the hero.
+   - Fixes: created a focused visual revision, replaced the tall floating route with one wide rounded map surface, moved the three steps into a balanced left-to-right sequence, and reduced the gap before setup. Below 760 px, the same content becomes a compact stacked list inside one rounded surface.
+   - Post-fix evidence: the focused source and browser render were compared together at 1365 × 936. The final render preserves the heading hierarchy and route rhythm while removing the dead space; the panel has no horizontal overflow and its 1440 × 430 raster loaded at full natural size.
 
 ## Residual P3 polish
 
@@ -52,6 +56,7 @@
 - [x] Remove the rejected connection-mode comparison
 - [x] Treat mobile data as supported throughout visible copy
 - [x] Keep setup concise and directly usable on the website
+- [x] Replace the empty vertical journey with the approved compact horizontal composition
 - [x] Verify reveal motion, reduced motion, disclosures, links, imagery, and overflow
 - [x] Build the production website bundle
 
