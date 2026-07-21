@@ -1,8 +1,19 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect } from "react";
+import {
+  ArrowUpRight,
+  CaretDown,
+  Code,
+  DeviceMobile,
+  DownloadSimple,
+  Info,
+  Lightning,
+  LockSimple,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 
 const links = {
   download:
-    "https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v1.0.3-unsigned.ipa",
+    "https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-unsigned.ipa",
   github: "https://github.com/raph559/WaypointApp",
   setup: "#setup",
   fullSetup: "https://github.com/raph559/WaypointApp#first-time-setup",
@@ -19,37 +30,34 @@ const links = {
 };
 
 const iconUrl = `${import.meta.env.BASE_URL}waypoint-icon.png`;
-const markUrl = `${import.meta.env.BASE_URL}waypoint-mark.png`;
+const heroPhoneUrl = `${import.meta.env.BASE_URL}waypoint-hero-phone.webp`;
+const setupIllustrationUrl = `${import.meta.env.BASE_URL}waypoint-setup-illustration.webp`;
+const journeyRouteUrl = `${import.meta.env.BASE_URL}waypoint-journey-route.png`;
+
+const proofPoints = [
+  { label: "Open source", icon: Code },
+  { label: "No jailbreak", icon: LockSimple },
+  { label: "No JIT", icon: Lightning },
+  { label: "iOS 26", icon: DeviceMobile },
+];
 
 const capabilities = [
   {
-    title: "Pick any place.",
+    title: "Pick a place.",
     body: "Search, tap the map, or drag the pin.",
+    tone: "mint",
   },
   {
-    title: "Start. Then move.",
-    body: "Change location without restarting the simulation.",
+    title: "Start spoofing.",
+    body: "Move again without restarting the simulation.",
+    tone: "coral",
   },
   {
     title: "Know when it stops.",
-    body: "Optional local alerts warn when confirmation is lost.",
+    body: "Optional alerts tell you when confirmation is lost.",
+    tone: "blue",
   },
 ];
-
-const connectionModes = {
-  wifi: {
-    label: "Wi-Fi",
-    status: "Recommended",
-    title: "Start right from the map.",
-    body: "Choose a location and tap Start spoofing.",
-  },
-  cellular: {
-    label: "Mobile data",
-    status: "Experimental",
-    title: "Use the guided handoff.",
-    body: "Keep Wi-Fi off and follow the two Airplane Mode prompts.",
-  },
-};
 
 const setupSteps = [
   {
@@ -73,27 +81,23 @@ const setupSteps = [
   {
     title: "Download Waypoint.",
     body: "Get the latest IPA, then open it in SideStore or AltStore to install it.",
-    actions: [
-      { label: "Download IPA", href: links.download, primary: true },
-    ],
+    actions: [{ label: "Download IPA", href: links.download }],
   },
   {
-    title: "Start and pair on Wi-Fi.",
+    title: "Start and pair.",
     body:
-      "Choose a location and tap Start spoofing. If asked, import directly from SideStore or select this iPhone's pairing file from Files.",
+      "Choose a location and tap Start spoofing. Waypoint follows the active connection. If asked, import directly from SideStore or select this iPhone's pairing file from Files.",
   },
   {
     title: "Let setup finish.",
     body:
-      "Keep Waypoint open and online while it downloads about 17 MB of support files. Wait for Spoof Active. Airplane Mode is not needed.",
+      "Keep Waypoint open while it downloads about 17 MB of support files. On Wi-Fi, just wait for Spoof Active. On mobile data, follow the two guided Airplane Mode prompts.",
   },
 ];
 
 function useRevealMotion() {
   useLayoutEffect(() => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     if (reduceMotion.matches || !("IntersectionObserver" in window)) {
       return undefined;
@@ -101,7 +105,6 @@ function useRevealMotion() {
 
     const root = document.documentElement;
     const elements = [...document.querySelectorAll("[data-reveal]")];
-
     root.classList.add("motion-ready");
 
     const observer = new IntersectionObserver(
@@ -112,11 +115,11 @@ function useRevealMotion() {
           observer.unobserve(entry.target);
         });
       },
-      { threshold: 0.1, rootMargin: "0px 0px -6% 0px" },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
     );
 
     elements.forEach((element) => {
-      if (element.getBoundingClientRect().top < window.innerHeight * 0.98) {
+      if (element.getBoundingClientRect().top < window.innerHeight * 0.96) {
         element.classList.add("is-visible");
       } else {
         observer.observe(element);
@@ -132,12 +135,10 @@ function useRevealMotion() {
 
 function useScrollMotion() {
   useEffect(() => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-    const mark = document.querySelector(".hero-mark img");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const artwork = document.querySelector(".hero-artwork img");
 
-    if (reduceMotion.matches || !mark) return undefined;
+    if (reduceMotion.matches || !artwork) return undefined;
 
     let frame = null;
 
@@ -145,17 +146,10 @@ function useScrollMotion() {
       frame = null;
       const progress = Math.min(
         Math.max(window.scrollY / Math.max(window.innerHeight, 1), 0),
-        1,
+        1.25,
       );
-      const compactLayout = window.innerWidth <= 1040;
-      const maxOffset = compactLayout ? 10 : 24;
-      const maxScaleChange = compactLayout ? 0.01 : 0.025;
-
-      mark.style.setProperty("--scroll-offset", `${progress * maxOffset}px`);
-      mark.style.setProperty(
-        "--scroll-scale",
-        `${1 - progress * maxScaleChange}`,
-      );
+      artwork.style.setProperty("--art-shift", `${progress * 22}px`);
+      artwork.style.setProperty("--art-scale", `${1 - progress * 0.018}`);
     };
 
     const requestUpdate = () => {
@@ -171,16 +165,22 @@ function useScrollMotion() {
       if (frame !== null) window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", requestUpdate);
       window.removeEventListener("resize", requestUpdate);
-      mark.style.removeProperty("--scroll-offset");
-      mark.style.removeProperty("--scroll-scale");
+      artwork.style.removeProperty("--art-shift");
+      artwork.style.removeProperty("--art-scale");
     };
   }, []);
 }
 
-export function App() {
-  const [connectionMode, setConnectionMode] = useState("wifi");
-  const activeMode = connectionModes[connectionMode];
+function TextLink({ children, href }) {
+  return (
+    <a className="text-link" href={href}>
+      <span>{children}</span>
+      <ArrowUpRight aria-hidden="true" size={15} weight="bold" />
+    </a>
+  );
+}
 
+export function App() {
   useRevealMotion();
   useScrollMotion();
 
@@ -192,7 +192,7 @@ export function App() {
 
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Waypoint home">
-          <img src={iconUrl} alt="" width="48" height="48" />
+          <img src={iconUrl} alt="" width="42" height="42" />
           <span>Waypoint</span>
         </a>
 
@@ -224,6 +224,7 @@ export function App() {
 
             <div className="hero-actions">
               <a className="button button-primary" href={links.download}>
+                <DownloadSimple aria-hidden="true" size={19} weight="bold" />
                 Download IPA
               </a>
               <a className="button button-secondary" href={links.setup}>
@@ -231,147 +232,156 @@ export function App() {
               </a>
             </div>
 
-            <p className="trust-line">
-              No jailbreak <span aria-hidden="true">·</span> No JIT
-              <span aria-hidden="true">·</span> On-device after setup
-            </p>
+            <div className="proof-strip" aria-label="Waypoint requirements">
+              {proofPoints.map(({ label, icon: Icon }) => (
+                <span key={label}>
+                  <Icon aria-hidden="true" size={19} weight="regular" />
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="hero-mark" aria-hidden="true">
-            <img src={markUrl} alt="" width="420" height="460" />
+          <div className="hero-artwork" aria-hidden="true">
+            <img
+              src={heroPhoneUrl}
+              alt=""
+              width="760"
+              height="860"
+              fetchPriority="high"
+            />
           </div>
         </section>
 
-        <section className="section feature-section" id="features">
-          <div className="section-inner">
-            <div className="feature-overview" data-reveal>
-              <header className="section-heading">
-                <p className="section-kicker">How it works</p>
-                <h2>Everything happens on the map.</h2>
-              </header>
+        <section className="journey-section" id="features">
+          <div className="journey-heading" data-reveal>
+            <p className="section-kicker">How it works</p>
+            <h2>
+              Three moves,
+              <br />
+              one map.
+            </h2>
+            <p>
+              Pick a destination once, then adjust your simulated location as
+              often as you need.
+            </p>
+          </div>
 
-              <div className="capability-list">
-                {capabilities.map((capability, index) => (
-                  <article
-                    className="capability"
-                    key={capability.title}
-                    style={{ "--item-delay": `${index * 70}ms` }}
-                  >
-                    <span className="capability-index" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h3>{capability.title}</h3>
-                      <p>{capability.body}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <div className="connection-switcher" data-reveal>
-              <div
-                className="mode-tabs"
-                role="group"
-                aria-label="Connection mode"
-              >
-                {Object.entries(connectionModes).map(([key, mode]) => (
-                  <button
-                    aria-controls="connection-panel"
-                    aria-pressed={connectionMode === key}
-                    className="mode-tab"
-                    data-mode={key}
-                    key={key}
-                    onClick={() => setConnectionMode(key)}
-                    type="button"
-                  >
-                    <span>{mode.label}</span>
-                    <small>{mode.status}</small>
-                  </button>
-                ))}
-              </div>
-
-              <div
-                aria-atomic="true"
-                aria-live="polite"
-                className="connection-panel"
-                id="connection-panel"
-              >
-                <div className="connection-panel-content" key={connectionMode}>
-                  <h3>{activeMode.title}</h3>
-                  <p>{activeMode.body}</p>
-                </div>
-              </div>
-            </div>
+          <div className="journey-track">
+            <img
+              className="journey-route-art"
+              data-reveal
+              src={journeyRouteUrl}
+              alt=""
+              width="720"
+              height="700"
+              loading="lazy"
+            />
+            <ol className="journey-list" role="list">
+              {capabilities.map((capability, index) => (
+                <li
+                  className="journey-step"
+                  data-reveal
+                  data-tone={capability.tone}
+                  key={capability.title}
+                  style={{ "--reveal-delay": `${index * 90}ms` }}
+                >
+                  <span className="journey-number" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3>{capability.title}</h3>
+                    <p>{capability.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
         <section
           aria-labelledby="setup-title"
-          className="section setup-section"
+          className="setup-section"
           id="setup"
         >
-          <div className="section-inner setup-inner" data-reveal>
-            <header className="setup-intro">
-              <p className="section-kicker">One-time setup</p>
-              <h2 id="setup-title">Get Waypoint on your iPhone.</h2>
-              <p className="setup-copy">
-                Most of the work happens once. After that, choose a place and
-                start directly from the map.
-              </p>
-              <p className="setup-requirements">
-                iOS 26 <span aria-hidden="true">·</span> Developer Mode
-                <span aria-hidden="true">·</span> LocalDevVPN
-              </p>
-            </header>
+          <div className="setup-aside" data-reveal>
+            <p className="section-kicker">One-time setup</p>
+            <h2 id="setup-title">
+              <span>Setup once.</span>
+              <br />
+              <span>Then just go.</span>
+            </h2>
+            <p>
+              The first connection takes a few steps. Waypoint keeps the path
+              clear and puts the right help exactly where you need it.
+            </p>
 
-            <div className="setup-guide">
-              <ol className="setup-steps" role="list">
-                {setupSteps.map((step, index) => (
-                  <li
-                    className="setup-step"
-                    key={step.title}
-                    style={{ "--setup-delay": `${index * 65}ms` }}
-                  >
-                    <span className="setup-step-index" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h3>{step.title}</h3>
-                      <p>{step.body}</p>
-                      {step.actions ? (
-                        <div className="setup-step-links">
-                          {step.actions.map((action) => (
-                            <a
-                              className={
-                                action.primary
-                                  ? "setup-step-link is-primary"
-                                  : "setup-step-link"
-                              }
-                              href={action.href}
-                              key={action.label}
-                            >
-                              {action.label}
-                            </a>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+            <img
+              className="setup-illustration"
+              src={setupIllustrationUrl}
+              alt=""
+              width="520"
+              height="480"
+              loading="lazy"
+            />
 
-              <aside className="setup-security">
+            <aside className="setup-note setup-note-security">
+              <ShieldCheck aria-hidden="true" size={24} weight="regular" />
+              <div>
                 <strong>Keep your pairing record private.</strong>
                 <p>
                   It is a trusted credential for your iPhone. Never upload it,
                   paste it into an issue, or include it in logs or screenshots.
                 </p>
-              </aside>
+              </div>
+            </aside>
+          </div>
 
-              <details className="setup-details" id="pairing-help">
-                <summary>Pairing file help</summary>
-                <div className="setup-details-content">
+          <div className="setup-guide">
+            <ol className="setup-steps" role="list">
+              {setupSteps.map((step, index) => (
+                <li
+                  className="setup-step"
+                  data-reveal
+                  data-tone={capabilities[index % capabilities.length].tone}
+                  key={step.title}
+                  style={{ "--reveal-delay": `${index * 70}ms` }}
+                >
+                  <span className="setup-step-index" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <div className="setup-step-copy">
+                    <h3>{step.title}</h3>
+                    <p>{step.body}</p>
+                  </div>
+                  {step.actions ? (
+                    <div className="setup-step-actions">
+                      {step.actions.map((action) => (
+                        <TextLink href={action.href} key={action.label}>
+                          {action.label}
+                        </TextLink>
+                      ))}
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+
+            <div className="setup-disclosures" data-reveal>
+              <details id="pairing-help">
+                <summary>
+                  <span>Pairing file help</span>
+                  <span className="summary-meta">
+                    <span className="summary-label">Private</span>
+                    <CaretDown
+                      aria-hidden="true"
+                      className="summary-chevron"
+                      size={18}
+                      weight="bold"
+                    />
+                  </span>
+                </summary>
+                <div className="details-content">
                   <ul>
                     <li>
                       <strong>Using SideStore:</strong> choose Import with
@@ -383,44 +393,57 @@ export function App() {
                       then save it to Files on the iPhone.
                     </li>
                   </ul>
-                  <a className="setup-step-link" href={links.pairingTool}>
+                  <TextLink href={links.pairingTool}>
                     Open the pairing tool
-                  </a>
+                  </TextLink>
                 </div>
               </details>
 
-              <details className="setup-details">
+              <details id="mobile-data-start">
                 <summary>
-                  Starting without Wi-Fi <span>Experimental</span>
+                  <span>Starting on mobile data</span>
+                  <CaretDown
+                    aria-hidden="true"
+                    className="summary-chevron"
+                    size={18}
+                    weight="bold"
+                  />
                 </summary>
-                <ol>
-                  <li>Turn Wi-Fi off and confirm that 4G or 5G is working.</li>
-                  <li>Choose a location and tap Start on mobile data.</li>
-                  <li>
-                    Follow the Airplane Mode on and off prompts exactly, keeping
-                    Wi-Fi off.
-                  </li>
-                  <li>Wait until Waypoint confirms the spoof is active.</li>
-                </ol>
+                <div className="details-content">
+                  <ol>
+                    <li>Turn Wi-Fi off and confirm that 4G or 5G is working.</li>
+                    <li>Choose a location and tap Start on mobile data.</li>
+                    <li>
+                      Follow the Airplane Mode on and off prompts exactly,
+                      keeping Wi-Fi off.
+                    </li>
+                    <li>Wait until Waypoint confirms the spoof is active.</li>
+                  </ol>
+                </div>
               </details>
-
-              <p className="setup-help">
-                When finished, tap Stop before disconnecting LocalDevVPN. Need
-                more help?{" "}
-                <a href={links.fullSetup}>
-                  Read the full setup and troubleshooting guide.
-                </a>
-              </p>
             </div>
+
+            <p className="setup-help" data-reveal>
+              <Info aria-hidden="true" size={19} weight="regular" />
+              <span>
+                Tap Stop before disconnecting LocalDevVPN. Need more help?{" "}
+                <a href={links.fullSetup}>Open the complete troubleshooting guide.</a>
+              </span>
+            </p>
           </div>
         </section>
       </main>
 
       <footer className="site-footer" data-reveal>
         <div className="footer-brand">
-          <img src={iconUrl} alt="" width="36" height="36" />
-          <span>Waypoint</span>
+          <div className="brand-line">
+            <img src={iconUrl} alt="" width="42" height="42" />
+            <span>Waypoint</span>
+          </div>
+          <p>Open-source iOS location simulation, directly from your iPhone.</p>
+          <a href={links.github}>github.com/raph559/WaypointApp</a>
         </div>
+
         <nav aria-label="Footer navigation">
           <a href={links.github}>Source</a>
           <a href={links.contributing}>Contributing</a>

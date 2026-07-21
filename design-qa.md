@@ -1,0 +1,58 @@
+# Waypoint website design QA
+
+## Evidence
+
+- Source visual truth: `/workspace/scratch/39bbb15352a6/generated_images/exec-dc0ecc7e-5244-4889-ba85-82cb62f379fe.png`
+- Rendered implementation: `http://terminal.local:4173/` in the cloud browser
+- Implementation screenshot evidence: inline browser-rendered captures from the local preview; the browser runtime did not expose a persistent filesystem path
+- Viewport: 1365 × 936, desktop dark theme
+- States reviewed: hero at rest, map journey after scroll reveal, setup section, both setup disclosures opened
+- Full-view evidence: the complete source mockup was reviewed alongside browser captures covering the full implemented page in three contiguous regions
+- Focused comparison evidence: source and implementation were emitted together for the hero, map journey, and setup regions
+
+## Findings
+
+- No actionable P0, P1, or P2 differences remain.
+- The connection-mode comparison in the source visual was intentionally removed after the user rejected that section. The implementation now explains mobile-data handoff only where it affects setup.
+- The source's old cautionary cellular treatment was intentionally replaced with supported, connection-aware language at the user's direction.
+
+## Required fidelity surfaces
+
+- Fonts and typography: system display and text faces preserve the source hierarchy, compact weight contrast, tight display tracking, and two-line hero/setup wraps.
+- Spacing and layout rhythm: the asymmetric hero, editorial journey, rounded setup surface, 2 px borders, generous vertical rhythm, and compact footer match the approved direction without the removed mode block.
+- Colors and tokens: charcoal, slate, warm off-white, mint, coral, and dusty blue stay balanced; generated-image backgrounds were normalized to their parent surfaces so no hard rectangular matte remains.
+- Image quality: the generated phone, route, and setup illustration use purpose-sized raster assets. The hero and setup art use optimized WebP files; no placeholder, CSS-drawn, or handcrafted SVG artwork is used.
+- Copy and content: primary actions, installer links, pairing privacy, mobile-data steps, disconnect guidance, and supported platform language are accurate and concise. No deprecated cellular caveat label remains.
+- Icons and affordances: Phosphor icons are consistent, buttons and links have clear hover/focus behavior, and disclosure chevrons reflect open state.
+- Interactions: Setup navigation, both native disclosures, installer links, and stable latest-IPA links were exercised. Both disclosures opened successfully.
+- Responsiveness and accessibility: semantic landmarks, skip link, heading order, focus rings, 44 px tap targets, reduced-motion handling, and no horizontal overflow were verified. The 390 px breakpoint was inspected in CSS; this browser session did not expose viewport emulation for a separate mobile capture.
+- Console and loading: the browser pass reported no console errors; every visible image loaded at its expected natural dimensions.
+
+## Comparison history
+
+1. Earlier P2: the setup title wrapped too aggressively, mid-width setup columns could overflow, narrow headings could clip, and disclosure focus rings were cut off.
+   - Fixes: locked the intended two-line desktop title, raised the single-column breakpoint, allowed narrow-screen wrapping, and moved focus outlines inside the rounded disclosure surface.
+   - Post-fix evidence: final setup capture shows the two-line title, aligned five-step guide, intact borders, and unclipped disclosure container.
+2. Earlier P2: generated hero and setup assets exposed dark rectangular mattes against their parent surfaces.
+   - Fixes: normalized the raster backgrounds to the page and setup surface colors, then shipped optimized WebP assets.
+   - Post-fix evidence: final hero and setup captures show continuous backgrounds around both illustrations.
+3. Earlier P2: the feature list lacked the distinctive route motif from the approved direction.
+   - Fix: added a generated raster route and aligned the numbered steps along it, with a simpler stacked fallback below 680 px.
+   - Post-fix evidence: final journey capture shows the mint/coral/blue sequence following the route without the removed connection-mode cards.
+4. User-directed content revision: removed the entire Wi-Fi/mobile comparison block and elevated mobile data to normal supported setup copy.
+   - Post-fix evidence: DOM and visible-copy checks found zero deprecated caveat labels and zero connection-mode cards.
+
+## Residual P3 polish
+
+- Capture a physical narrow-phone screenshot after deployment to supplement the CSS breakpoint inspection.
+
+## Implementation checklist
+
+- [x] Match the approved visual direction
+- [x] Remove the rejected connection-mode comparison
+- [x] Treat mobile data as supported throughout visible copy
+- [x] Keep setup concise and directly usable on the website
+- [x] Verify reveal motion, reduced motion, disclosures, links, imagery, and overflow
+- [x] Build the production website bundle
+
+final result: passed
