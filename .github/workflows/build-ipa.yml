@@ -106,10 +106,12 @@ jobs:
           test -n "$version"
 
           tag="v$version"
-          asset="Waypoint-iOS26-$tag-unsigned.ipa"
-          mv Waypoint-unsigned.ipa "$asset"
+          versioned_asset="Waypoint-iOS26-$tag-unsigned.ipa"
+          latest_asset="Waypoint-iOS26-unsigned.ipa"
+          mv Waypoint-unsigned.ipa "$versioned_asset"
+          cp "$versioned_asset" "$latest_asset"
 
-          checksum="$(sha256sum "$asset" | awk '{ print $1 }')"
+          checksum="$(sha256sum "$versioned_asset" | awk '{ print $1 }')"
           notes="$(mktemp)"
           printf '%s\n' \
             "## Waypoint $version" \
@@ -121,17 +123,17 @@ jobs:
             "- Map search with place and address suggestions" \
             "- Tap or drag the pin, then start, move, or stop the simulated location" \
             "- Guided pairing and developer-support setup" \
-            "- Recommended Wi-Fi start and experimental cellular-only handoff" \
+            "- Wi-Fi start and guided mobile-data handoff" \
             "- Optional disconnect notifications and background keepalive" \
             "" \
             "### Install" \
             "" \
-            "1. Download $asset below." \
+            "1. Download $versioned_asset below." \
             "2. Sign and install it with SideStore, AltStore Classic/AltServer, or another compatible method." \
             "3. Follow the first-time setup guide: https://raph559.github.io/WaypointApp/#setup" \
             "" \
             "> [!NOTE]" \
-            "> Cellular-only start remains experimental and device-dependent. Starting on Wi-Fi is recommended." \
+            "> Starting on mobile data uses Waypoint's guided Airplane Mode handoff while Wi-Fi stays off." \
             "" \
             "Waypoint uses Apple's software-simulated developer location. Apps can detect or reject simulated locations." \
             "" \
@@ -139,13 +141,13 @@ jobs:
             > "$notes"
 
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$asset" --clobber
+            gh release upload "$tag" "$versioned_asset" "$latest_asset" --clobber
             gh release edit "$tag" \
               --title "Waypoint $version" \
               --notes-file "$notes" \
               --latest
           else
-            gh release create "$tag" "$asset" \
+            gh release create "$tag" "$versioned_asset" "$latest_asset" \
               --target "$GITHUB_SHA" \
               --title "Waypoint $version" \
               --notes-file "$notes" \
