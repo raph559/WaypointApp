@@ -503,7 +503,7 @@ h1 {
   margin: 0;
   padding: 4px 24px;
   background: rgba(16, 19, 24, 0.16);
-  border: 1px solid rgba(244, 245, 242, 0.12);
+  border: 2px solid rgba(244, 245, 242, 0.18);
   border-radius: 22px;
   list-style: none;
 }
@@ -552,7 +552,7 @@ h1 {
   align-items: center;
   justify-content: center;
   color: var(--soft-white);
-  border: 1px solid rgba(244, 245, 242, 0.34);
+  border: 2px solid rgba(244, 245, 242, 0.4);
   border-radius: 12px;
   font-size: 0.84rem;
   font-weight: 700;
@@ -580,7 +580,7 @@ h1 {
   padding: 16px 18px;
   color: var(--soft-white);
   background: rgba(85, 214, 176, 0.1);
-  border: 1px solid rgba(111, 224, 189, 0.38);
+  border: 2px solid rgba(111, 224, 189, 0.42);
 }
 
 .setup-security strong {
@@ -595,9 +595,8 @@ h1 {
 }
 
 .setup-details {
-  overflow: clip;
   background: rgba(16, 19, 24, 0.13);
-  border: 1px solid rgba(244, 245, 242, 0.14);
+  border: 2px solid rgba(244, 245, 242, 0.18);
 }
 
 .setup-details summary {
@@ -626,6 +625,26 @@ h1 {
   color: #d2d8d5;
   font-size: 0.9rem;
   line-height: 1.55;
+}
+
+.setup-details-content {
+  padding: 17px 20px 20px;
+  color: #d2d8d5;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.setup-details-content ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.setup-details-content li + li {
+  margin-top: 9px;
+}
+
+.setup-details-content .setup-step-link {
+  margin-top: 16px;
 }
 
 .setup-details li + li {

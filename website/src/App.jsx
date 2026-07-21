@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 
 const links = {
-  download: "https://github.com/raph559/WaypointApp/releases/latest",
+  download:
+    "https://github.com/raph559/WaypointApp/releases/latest/download/Waypoint-iOS26-v1.0.3-unsigned.ipa",
   github: "https://github.com/raph559/WaypointApp",
   setup: "#setup",
   fullSetup: "https://github.com/raph559/WaypointApp#first-time-setup",
@@ -52,21 +53,21 @@ const connectionModes = {
 
 const setupSteps = [
   {
-    title: "Prepare your iPhone.",
-    body:
-      "Enable Developer Mode, restart when asked, then install LocalDevVPN and accept its VPN permission once.",
-    actions: [
-      { label: "Developer Mode help", href: links.developerMode },
-      { label: "Get LocalDevVPN", href: links.localDevVPN },
-    ],
-  },
-  {
     title: "Choose an installer.",
     body:
       "Waypoint is an unsigned IPA. Use SideStore or AltStore Classic to sign and install it.",
     actions: [
       { label: "Install SideStore", href: links.sideStore },
       { label: "Use AltStore", href: links.altStore },
+    ],
+  },
+  {
+    title: "Prepare your iPhone.",
+    body:
+      "When your installer prompts you, enable Developer Mode and restart. Install LocalDevVPN and accept its VPN permission once.",
+    actions: [
+      { label: "Developer Mode help", href: links.developerMode },
+      { label: "Get LocalDevVPN", href: links.localDevVPN },
     ],
   },
   {
@@ -77,17 +78,14 @@ const setupSteps = [
     ],
   },
   {
-    title: "Add your pairing record.",
+    title: "Start and pair on Wi-Fi.",
     body:
-      "When Waypoint asks, import directly from SideStore or select this iPhone's pairing file from Files.",
-    actions: [
-      { label: "Pairing file help", href: links.pairingTool },
-    ],
+      "Choose a location and tap Start spoofing. If asked, import directly from SideStore or select this iPhone's pairing file from Files.",
   },
   {
-    title: "Start on Wi-Fi.",
+    title: "Let setup finish.",
     body:
-      "Choose a location, tap Start spoofing, and wait for Spoof Active. Airplane Mode is not needed.",
+      "Keep Waypoint open and online while it downloads about 17 MB of support files. Wait for Spoof Active. Airplane Mode is not needed.",
   },
 ];
 
@@ -328,7 +326,7 @@ export function App() {
             </header>
 
             <div className="setup-guide">
-              <ol className="setup-steps">
+              <ol className="setup-steps" role="list">
                 {setupSteps.map((step, index) => (
                   <li
                     className="setup-step"
@@ -370,6 +368,26 @@ export function App() {
                   paste it into an issue, or include it in logs or screenshots.
                 </p>
               </aside>
+
+              <details className="setup-details" id="pairing-help">
+                <summary>Pairing file help</summary>
+                <div className="setup-details-content">
+                  <ul>
+                    <li>
+                      <strong>Using SideStore:</strong> choose Import with
+                      SideStore when Waypoint asks.
+                    </li>
+                    <li>
+                      <strong>Using Files:</strong> connect the unlocked iPhone
+                      by USB, trust the computer, create an RPPairing record,
+                      then save it to Files on the iPhone.
+                    </li>
+                  </ul>
+                  <a className="setup-step-link" href={links.pairingTool}>
+                    Open the pairing tool
+                  </a>
+                </div>
+              </details>
 
               <details className="setup-details">
                 <summary>
