@@ -151,6 +151,8 @@ struct SetupView: View {
             model.pairingState.isReady ? "Replace Pairing Record" : "Import Pairing Record",
             systemImage: "doc.badge.plus"
         )
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(.interaction, Rectangle())
     }
 
     private var pairingDetail: String {
