@@ -547,9 +547,9 @@ main:focus {
 
 .setup-steps::before {
   position: absolute;
-  top: 13px;
+  top: 25px;
   bottom: 18px;
-  left: 67px;
+  left: 98px;
   width: 2px;
   background: var(--line);
   border-radius: 999px;
@@ -559,9 +559,9 @@ main:focus {
 .setup-step {
   position: relative;
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: 84px minmax(0, 1fr);
   align-items: start;
-  column-gap: 30px;
+  column-gap: 34px;
   padding: 0 0 44px;
 }
 
@@ -575,13 +575,12 @@ main:focus {
 
 .setup-step-index {
   display: block;
-  padding-top: 2px;
   color: var(--mint);
-  font-size: 1.05rem;
+  font-size: clamp(2.45rem, 3.15vw, 2.9rem);
   font-variant-numeric: tabular-nums;
-  font-weight: 780;
-  letter-spacing: 0.045em;
-  line-height: 1.25;
+  font-weight: 740;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
   text-align: right;
 }
 
@@ -601,10 +600,10 @@ main:focus {
 
 .setup-step-copy::before {
   position: absolute;
-  top: 7px;
-  left: -20px;
-  width: 10px;
-  height: 10px;
+  top: 17px;
+  left: -26px;
+  width: 12px;
+  height: 12px;
   background: var(--mint);
   border: 2px solid var(--surface);
   border-radius: 999px;
@@ -1145,17 +1144,23 @@ main:focus {
   }
 
   .setup-step {
-    grid-template-columns: 40px minmax(0, 1fr);
-    column-gap: 22px;
+    grid-template-columns: 62px minmax(0, 1fr);
+    column-gap: 24px;
     padding-bottom: 38px;
   }
 
   .setup-steps::before {
-    left: 50px;
+    top: 20px;
+    left: 75px;
   }
 
   .setup-step-copy::before {
+    top: 13px;
     left: -17px;
+  }
+
+  .setup-step-index {
+    font-size: 2.05rem;
   }
 
   .setup-step-actions {
@@ -1219,16 +1224,20 @@ main:focus {
   }
 
   .setup-step {
-    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-columns: 54px minmax(0, 1fr);
     column-gap: 18px;
   }
 
   .setup-steps::before {
-    left: 41px;
+    left: 63px;
   }
 
   .setup-step-copy::before {
     left: -14px;
+  }
+
+  .setup-step-index {
+    font-size: 1.85rem;
   }
 }
 
