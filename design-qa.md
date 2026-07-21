@@ -4,12 +4,13 @@
 
 - Source visual truth: `/workspace/scratch/39bbb15352a6/generated_images/exec-dc0ecc7e-5244-4889-ba85-82cb62f379fe.png`
 - Focused journey-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-f521bcff-8e5f-4b19-a83c-907d4381bda3.png`
-- Rendered implementation: `http://terminal.local:4173/` in the cloud browser
-- Implementation screenshot evidence: inline browser-rendered captures from the local preview; the browser runtime did not expose a persistent filesystem path
-- Viewport: 1365 × 936, desktop dark theme
+- Focused setup-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-d09bb700-f578-4dfc-9145-ab10f207b729.png`
+- Rendered implementation: `https://raph559.github.io/WaypointApp/#setup` in the cloud browser
+- Implementation screenshot evidence: inline browser-rendered captures from the deployed GitHub Pages site; the browser runtime did not expose a persistent filesystem path
+- Viewport: 1363 × 936, desktop dark theme
 - States reviewed: hero at rest, map journey after scroll reveal, setup section, both setup disclosures opened
 - Full-view evidence: the complete source mockup was reviewed alongside browser captures covering the full implemented page in three contiguous regions
-- Focused comparison evidence: source and implementation were emitted together for the hero, revised horizontal map journey, and setup regions
+- Focused comparison evidence: source and implementation were emitted together for the hero, revised horizontal map journey, and revised setup timeline regions
 
 ## Findings
 
@@ -45,6 +46,9 @@
 5. Latest P2: the vertical journey layout left a large empty center and lower half, making the steps feel detached from the hero.
    - Fixes: created a focused visual revision, replaced the tall floating route with one wide rounded map surface, moved the three steps into a balanced left-to-right sequence, and reduced the gap before setup. Below 760 px, the same content becomes a compact stacked list inside one rounded surface.
    - Post-fix evidence: the focused source and browser render were compared together at 1365 × 936. The final render preserves the heading hierarchy and route rhythm while removing the dead space; the panel has no horizontal overflow and its 1440 × 430 raster loaded at full natural size.
+6. Latest P2: the right side of the setup section read as a generic settings table and visually conflicted with the editorial title and illustration on the left.
+   - Fixes: replaced circular badges, full-width separators, and the detached utility-link column with one quiet vertical rail, tabular `01–05` labels, compact editorial step blocks, and help links placed directly beneath their relevant copy.
+   - Post-fix evidence: the focused source and deployed browser render were emitted together at 1363 × 936. The live section has five padded labels, no step borders, a 2 px timeline rail, 44 px action targets, no horizontal overflow, and no page-origin console errors.
 
 ## Residual P3 polish
 
@@ -57,6 +61,7 @@
 - [x] Treat mobile data as supported throughout visible copy
 - [x] Keep setup concise and directly usable on the website
 - [x] Replace the empty vertical journey with the approved compact horizontal composition
+- [x] Align the setup instructions with the editorial left-hand composition
 - [x] Verify reveal motion, reduced motion, disclosures, links, imagery, and overflow
 - [x] Build the production website bundle
 
