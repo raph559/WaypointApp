@@ -1,0 +1,20 @@
+@media (max-width: 1080px) {
+  .hero {
+    grid-template-columns: minmax(0, 0.95fr) minmax(380px, 1.05fr);
+    gap: 34px;
+  }
+
+  .hero h1 {
+    font-size: clamp(4rem, 7.4vw, 5.5rem);
+  }
+
+  .journey-section {
+    gap: 72px;
+  }
+
+  .setup-section {
+    grid-template-columns: minmax(300px, 0.95fr) minmax(390px, 1.05fr);
+    gap: 42px;
+    padding: 44px;
+  }
+}

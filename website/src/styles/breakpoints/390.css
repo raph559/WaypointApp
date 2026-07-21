@@ -1,0 +1,46 @@
+@media (max-width: 390px) {
+  .site-header nav {
+    gap: 9px;
+  }
+
+  .site-header nav a {
+    font-size: 0.76rem;
+  }
+
+  .hero h1 {
+    font-size: 3.32rem;
+  }
+
+  .setup-aside h2 span {
+    white-space: normal;
+  }
+
+  .eyebrow {
+    letter-spacing: 0.14em;
+  }
+
+  .proof-strip {
+    gap: 14px 10px;
+  }
+
+  .proof-strip span {
+    font-size: 0.75rem;
+  }
+
+  .setup-step {
+    grid-template-columns: 54px minmax(0, 1fr);
+    column-gap: 18px;
+  }
+
+  .setup-steps::before {
+    left: 63px;
+  }
+
+  .setup-step-copy::before {
+    left: -14px;
+  }
+
+  .setup-step-index {
+    font-size: 1.85rem;
+  }
+}

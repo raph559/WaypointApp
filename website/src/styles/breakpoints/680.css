@@ -1,0 +1,174 @@
+@media (max-width: 680px) {
+  :root {
+    --page-gutter: 18px;
+  }
+
+  .site-header {
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+
+  .site-header nav {
+    gap: 14px;
+  }
+
+  .site-header nav a {
+    padding: 0 2px;
+    font-size: 0.82rem;
+  }
+
+  .brand span {
+    display: none;
+  }
+
+  .hero {
+    padding: 70px 0 54px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.5rem, 16.4vw, 5rem);
+  }
+
+  .hero-description {
+    font-size: 1.04rem;
+  }
+
+  .hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button {
+    width: 100%;
+  }
+
+  .proof-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-artwork {
+    margin-top: 4px;
+  }
+
+  .journey-section {
+    padding: 76px 0 34px;
+  }
+
+  .journey-heading h2 {
+    font-size: clamp(3.1rem, 14vw, 4.5rem);
+  }
+
+  .setup-aside h2 {
+    font-size: clamp(2.9rem, 12.5vw, 4rem);
+  }
+
+  .journey-list {
+    position: static;
+    margin-left: 0;
+  }
+
+  .journey-track {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .journey-route-art {
+    display: none;
+  }
+
+  .journey-step {
+    position: static;
+    grid-template-columns: 60px minmax(0, 1fr);
+    width: 100%;
+    min-height: 148px;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 2px solid var(--line-soft);
+  }
+
+  .journey-step:nth-child(1),
+  .journey-step:nth-child(2),
+  .journey-step:nth-child(3) {
+    width: 100%;
+  }
+
+  .journey-step:last-child {
+    border-bottom: 0;
+  }
+
+  .journey-number {
+    width: 54px;
+    height: 54px;
+  }
+
+  .setup-section {
+    margin-top: 84px;
+    padding: 30px 22px;
+    border-radius: 28px;
+  }
+
+  .setup-aside {
+    display: block;
+  }
+
+  .setup-illustration {
+    width: min(100%, 420px);
+    margin: 28px auto;
+  }
+
+  .setup-note {
+    margin-top: 0;
+  }
+
+  .setup-step {
+    grid-template-columns: 62px minmax(0, 1fr);
+    column-gap: 24px;
+    padding-bottom: 38px;
+  }
+
+  .setup-steps::before {
+    top: 20px;
+    left: 75px;
+  }
+
+  .setup-step-copy::before {
+    top: 13px;
+    left: -17px;
+  }
+
+  .setup-step-index {
+    font-size: 2.05rem;
+  }
+
+  .setup-step-actions {
+    column-gap: 18px;
+  }
+
+  .text-link {
+    min-height: 44px;
+  }
+
+  .setup-disclosures summary {
+    min-height: 60px;
+    padding: 14px 16px;
+  }
+
+  .details-content {
+    padding: 0 17px 20px;
+  }
+
+  .site-footer {
+    margin-top: 84px;
+    padding: 28px 24px;
+    border-radius: 24px;
+  }
+
+  .site-footer nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 4px 24px;
+  }
+}

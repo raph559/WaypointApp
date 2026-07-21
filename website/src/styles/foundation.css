@@ -1,0 +1,162 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
+  color: #ecece7;
+  background: #101318;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #101318;
+  --surface: #171d22;
+  --surface-raised: #1c242b;
+  --surface-blue: #1d2a36;
+  --paper: #ecece7;
+  --muted: #a6aca9;
+  --line: #394249;
+  --line-soft: #2b3339;
+  --mint: #66d7b2;
+  --mint-deep: #17372f;
+  --coral: #ef8b72;
+  --coral-deep: #3d2725;
+  --blue: #7fb4e8;
+  --blue-deep: #223244;
+  --page-gutter: clamp(20px, 5.2vw, 76px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--ink);
+}
+
+body,
+button {
+  font: inherit;
+}
+
+button,
+a,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+p,
+h1,
+h2,
+h3 {
+  margin-top: 0;
+  text-wrap: pretty;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid var(--mint);
+  outline-offset: 5px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 50;
+  padding: 12px 16px;
+  color: var(--ink);
+  background: var(--mint);
+  border-radius: 14px;
+  font-weight: 750;
+  transform: translateY(-160%);
+  transition: transform 180ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.site-shell {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) 34px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 104px;
+  gap: 28px;
+}
+
+.brand,
+.brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--paper);
+  font-size: 1.18rem;
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.brand img,
+.brand-line img {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+
+.site-header nav,
+.site-footer nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(22px, 3.6vw, 54px);
+}
+
+.site-header nav a,
+.site-footer nav a {
+  position: relative;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: #c7cbc8;
+  font-size: 0.9rem;
+  font-weight: 620;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.site-header nav a:hover,
+.site-footer nav a:hover {
+  color: var(--paper);
+  transform: translateY(-2px);
+}
+
+main:focus {
+  outline: none;
+}

@@ -1,0 +1,25 @@
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-reveal],
+  .hero-copy > *,
+  .hero-artwork {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero-artwork img {
+    transform: none !important;
+  }
+}

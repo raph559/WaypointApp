@@ -1,0 +1,26 @@
+.site-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  margin-top: 120px;
+  padding: 36px 42px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 30px;
+}
+
+.footer-brand {
+  max-width: 430px;
+}
+
+.footer-brand p {
+  margin: 18px 0 7px;
+  font-size: 0.9rem;
+}
+
+.footer-brand > a {
+  color: var(--mint);
+  font-size: 0.85rem;
+  font-weight: 680;
+}
