@@ -348,21 +348,21 @@ export function App() {
                   style={{ "--reveal-delay": `${index * 70}ms` }}
                 >
                   <span className="setup-step-index" aria-hidden="true">
-                    {index + 1}
+                    {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className="setup-step-copy">
                     <h3>{step.title}</h3>
                     <p>{step.body}</p>
+                    {step.actions ? (
+                      <div className="setup-step-actions">
+                        {step.actions.map((action) => (
+                          <TextLink href={action.href} key={action.label}>
+                            {action.label}
+                          </TextLink>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                  {step.actions ? (
-                    <div className="setup-step-actions">
-                      {step.actions.map((action) => (
-                        <TextLink href={action.href} key={action.label}>
-                          {action.label}
-                        </TextLink>
-                      ))}
-                    </div>
-                  ) : null}
                 </li>
               ))}
             </ol>

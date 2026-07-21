@@ -424,8 +424,7 @@ main:focus {
   width: 100%;
 }
 
-.journey-number,
-.setup-step-index {
+.journey-number {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -447,14 +446,12 @@ main:focus {
   transform: translateY(-50%);
 }
 
-[data-tone="coral"] .journey-number,
-[data-tone="coral"] .setup-step-index {
+[data-tone="coral"] .journey-number {
   color: var(--coral);
   background: var(--coral-deep);
 }
 
-[data-tone="blue"] .journey-number,
-[data-tone="blue"] .setup-step-index {
+[data-tone="blue"] .journey-number {
   color: var(--blue);
   background: var(--blue-deep);
 }
@@ -487,8 +484,8 @@ main:focus {
 
 .setup-section {
   display: grid;
-  grid-template-columns: minmax(300px, 0.78fr) minmax(540px, 1.22fr);
-  gap: clamp(42px, 6vw, 82px);
+  grid-template-columns: minmax(320px, 0.9fr) minmax(430px, 1.1fr);
+  gap: clamp(46px, 5.2vw, 74px);
   margin-top: 72px;
   padding: clamp(44px, 5vw, 74px);
   background: var(--surface);
@@ -541,47 +538,107 @@ main:focus {
 
 .setup-guide {
   min-width: 0;
-}
-
-.setup-step {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) minmax(150px, auto);
-  align-items: start;
-  gap: 18px 22px;
-  padding: 28px 0;
-  border-bottom: 2px solid var(--line-soft);
-}
-
-.setup-step:first-child {
   padding-top: 2px;
 }
 
+.setup-steps {
+  position: relative;
+}
+
+.setup-steps::before {
+  position: absolute;
+  top: 13px;
+  bottom: 18px;
+  left: 67px;
+  width: 2px;
+  background: var(--line);
+  border-radius: 999px;
+  content: "";
+}
+
+.setup-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 30px;
+  padding: 0 0 44px;
+}
+
+.setup-step:first-child {
+  padding-top: 0;
+}
+
+.setup-step:last-child {
+  padding-bottom: 4px;
+}
+
 .setup-step-index {
-  width: 46px;
-  height: 46px;
+  display: block;
+  padding-top: 2px;
   color: var(--mint);
-  background: var(--mint-deep);
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 780;
+  letter-spacing: 0.045em;
+  line-height: 1.25;
+  text-align: right;
+}
+
+[data-tone="coral"] .setup-step-index {
+  color: var(--coral);
+}
+
+[data-tone="blue"] .setup-step-index {
+  color: var(--blue);
 }
 
 .setup-step-copy {
+  position: relative;
   min-width: 0;
+  max-width: 580px;
+}
+
+.setup-step-copy::before {
+  position: absolute;
+  top: 7px;
+  left: -20px;
+  width: 10px;
+  height: 10px;
+  background: var(--mint);
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(102, 215, 178, 0.18);
+  content: "";
+}
+
+[data-tone="coral"] .setup-step-copy::before {
+  background: var(--coral);
+  box-shadow: 0 0 0 1px rgba(239, 139, 114, 0.18);
+}
+
+[data-tone="blue"] .setup-step-copy::before {
+  background: var(--blue);
+  box-shadow: 0 0 0 1px rgba(127, 180, 232, 0.18);
 }
 
 .setup-step h3 {
-  font-size: 1.23rem;
+  margin-bottom: 9px;
+  font-size: clamp(1.25rem, 1.8vw, 1.48rem);
 }
 
 .setup-step p {
-  max-width: 520px;
-  font-size: 0.9rem;
+  max-width: 560px;
+  font-size: 0.92rem;
+  line-height: 1.58;
 }
 
 .setup-step-actions {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  min-width: 150px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 24px;
+  margin-top: 8px;
 }
 
 .text-link {
@@ -792,17 +849,9 @@ main:focus {
   }
 
   .setup-section {
-    grid-template-columns: minmax(260px, 0.7fr) minmax(460px, 1.3fr);
+    grid-template-columns: minmax(300px, 0.95fr) minmax(390px, 1.05fr);
+    gap: 42px;
     padding: 44px;
-  }
-
-  .setup-step {
-    grid-template-columns: 48px minmax(0, 1fr);
-  }
-
-  .setup-step-actions {
-    grid-column: 2;
-    grid-template-columns: repeat(2, minmax(0, auto));
   }
 }
 
@@ -1093,20 +1142,21 @@ main:focus {
   }
 
   .setup-step {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 14px;
-    padding: 24px 0;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 22px;
+    padding-bottom: 38px;
   }
 
-  .setup-step-index {
-    width: 39px;
-    height: 39px;
+  .setup-steps::before {
+    left: 50px;
+  }
+
+  .setup-step-copy::before {
+    left: -17px;
   }
 
   .setup-step-actions {
-    grid-column: 2;
-    grid-template-columns: 1fr;
-    min-width: 0;
+    column-gap: 18px;
   }
 
   .text-link {
@@ -1163,6 +1213,19 @@ main:focus {
 
   .proof-strip span {
     font-size: 0.75rem;
+  }
+
+  .setup-step {
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 18px;
+  }
+
+  .setup-steps::before {
+    left: 41px;
+  }
+
+  .setup-step-copy::before {
+    left: -14px;
   }
 }
 
