@@ -23,7 +23,7 @@ body:
     id: waypoint-version
     attributes:
       label: Waypoint version
-      placeholder: "1.0.2"
+      placeholder: "1.0.3"
     validations:
       required: true
 

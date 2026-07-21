@@ -128,7 +128,7 @@ jobs:
             "" \
             "1. Download $asset below." \
             "2. Sign and install it with SideStore, AltStore Classic/AltServer, or another compatible method." \
-            "3. Follow the first-time setup guide: https://github.com/$GITHUB_REPOSITORY#first-time-setup" \
+            "3. Follow the first-time setup guide: https://raph559.github.io/WaypointApp/#setup" \
             "" \
             "> [!NOTE]" \
             "> Cellular-only start remains experimental and device-dependent. Starting on Wi-Fi is recommended." \
