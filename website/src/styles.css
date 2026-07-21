@@ -327,7 +327,7 @@ h1 {
 .capability-list {
   padding: 4px 24px;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 2px solid #3b4247;
   border-radius: 24px;
 }
 
@@ -368,7 +368,7 @@ h1 {
   grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.22fr);
   gap: clamp(28px, 4vw, 52px);
   background: var(--deep-teal);
-  border: 1px solid rgba(111, 224, 189, 0.2);
+  border: 2px solid rgba(111, 224, 189, 0.28);
   border-radius: 28px;
 }
 
@@ -466,7 +466,7 @@ h1 {
   align-items: end;
   gap: clamp(56px, 9vw, 130px);
   background: var(--slate);
-  border: 1px solid rgba(244, 245, 242, 0.12);
+  border: 2px solid rgba(244, 245, 242, 0.16);
   border-radius: 32px;
 }
 
