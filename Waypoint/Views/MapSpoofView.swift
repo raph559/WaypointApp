@@ -345,7 +345,7 @@ struct MapSpoofView: View {
             Button {
                 isCellularHandoffConfirmationPresented = true
             } label: {
-                Label("Switch to cellular (experimental)", systemImage: "antenna.radiowaves.left.and.right")
+                Label("Switch to mobile data", systemImage: "antenna.radiowaves.left.and.right")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

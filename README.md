@@ -84,7 +84,7 @@ preparation automatically.
 | 🌙 | **Optional background keepalive** | Improves reliability while switching between apps |
 | 🔄 | **Connection-aware start** | Uses a normal start on Wi-Fi and shows the guided cellular flow only on mobile data |
 | 🧩 | **Guided dependency setup** | Detects a missing LocalDevVPN, links to the App Store, and continues automatically after installation |
-| 📡 | **Guided mobile-data start (experimental)** | Opens LocalDevVPN, prepares the session, and guides the two Airplane Mode changes while Wi-Fi stays off |
+| 📡 | **Guided mobile-data start** | Opens LocalDevVPN, prepares the session, and guides the two Airplane Mode changes while Wi-Fi stays off |
 | 🔐 | **Protected local pairing data** | Stores the pairing record on-device and excludes it from backups |
 
 > [!IMPORTANT]
@@ -107,7 +107,7 @@ You'll need:
   <code>.mobiledevicepairing</code> or compatible <code>.plist</code> file
 - Internet access for the one-time developer-image download and MapKit search
 
-For the experimental cellular-only start, mobile data must be working before
+For the cellular-only start, mobile data must be working before
 you begin and Wi-Fi must remain off during the handoff.
 
 The personalized developer-image files are downloaded once, cached locally, and
@@ -179,7 +179,7 @@ record needs to be replaced.
 > your own iPhone, transfer and store it securely, and never share it, post it in
 > an issue, or include it in logs or screenshots.
 
-### Without Wi-Fi: cellular-only start — experimental
+### Without Wi-Fi: cellular-only start
 
 1. Turn Wi-Fi off, confirm that mobile data is working, and choose a location.
 2. Tap **Start on mobile data**.
@@ -221,7 +221,7 @@ Waypoint provides a direct shortcut to iOS notification settings. The wording
 is intentionally cautious: after iOS suspends or terminates the app, Waypoint
 cannot directly verify the current GPS state.
 
-### Mobile data with no Wi-Fi — experimental
+### Mobile data with no Wi-Fi
 
 On the tested iOS 26 device, a **new** developer-service connection failed while
 cellular was the only active physical interface. Waypoint's guide creates the
@@ -327,7 +327,7 @@ server.
 | Environment | Status |
 |---|---|
 | iPhone on iOS 26, Wi-Fi start | Primary supported and physically tested configuration |
-| iPhone on iOS 26, cellular-only start | Physically tested, but still experimental and device-dependent |
+| iPhone on iOS 26, cellular-only start | Physically tested and supported through the guided handoff |
 | iPhone on iOS 17.4–25 | Included by the build target, but not physically validated |
 | iPad on iPadOS 17.4 or later | Included by the build target, but not physically validated |
 
@@ -338,9 +338,9 @@ server.
 - Force-quitting Waypoint ends its keepalive.
 - VPN interruption, memory pressure, background suspension, app re-signing or
   reinstallation, or provisioning-profile expiry can stop the DVT connection.
-- On the tested iOS 26 device, fresh DVT connections failed on cellular-only
-  paths. The no-Wi-Fi handoff is experimental and may fail if iOS closes the
-  already-open session when cellular returns.
+- On the tested iOS 26 device, fresh DVT connections could not be opened on a
+  cellular-only path. Waypoint's guided handoff keeps the existing session
+  alive while mobile data returns; repeat the guide if iOS closes that session.
 - A watchdog notification means Waypoint lost confirmation; it does not prove
   exactly when iOS restored the real location.
 - The developer image generally needs to be prepared again after an iPhone
@@ -444,10 +444,10 @@ Place the archived <code>Waypoint.app</code> inside a top-level
 
 ## Project status
 
-Waypoint's core map, pairing, preparation, and Wi-Fi Start/Move/Stop flow is the
+Waypoint's core map, pairing, preparation, and Start/Move/Stop flow is the
 stable V1 experience. The guided no-Wi-Fi cellular workflow has also been
-confirmed on a physical iPhone running iOS 26, but remains experimental across
-devices and iOS network states.
+confirmed on a physical iPhone running iOS 26 and is part of the supported
+start flow.
 
 - Automatic preparation stays inside the Start flow; there is no separate
   Prepare button.
