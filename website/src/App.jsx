@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 const links = {
   download: "https://github.com/raph559/WaypointApp/releases/latest",
@@ -45,7 +45,7 @@ const connectionModes = {
 };
 
 function useRevealMotion() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
@@ -85,11 +85,59 @@ function useRevealMotion() {
   }, []);
 }
 
+function useScrollMotion() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const mark = document.querySelector(".hero-mark img");
+
+    if (reduceMotion.matches || !mark) return undefined;
+
+    let frame = null;
+
+    const update = () => {
+      frame = null;
+      const progress = Math.min(
+        Math.max(window.scrollY / Math.max(window.innerHeight, 1), 0),
+        1,
+      );
+      const compactLayout = window.innerWidth <= 1040;
+      const maxOffset = compactLayout ? 10 : 24;
+      const maxScaleChange = compactLayout ? 0.01 : 0.025;
+
+      mark.style.setProperty("--scroll-offset", `${progress * maxOffset}px`);
+      mark.style.setProperty(
+        "--scroll-scale",
+        `${1 - progress * maxScaleChange}`,
+      );
+    };
+
+    const requestUpdate = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+      mark.style.removeProperty("--scroll-offset");
+      mark.style.removeProperty("--scroll-scale");
+    };
+  }, []);
+}
+
 export function App() {
   const [connectionMode, setConnectionMode] = useState("wifi");
   const activeMode = connectionModes[connectionMode];
 
   useRevealMotion();
+  useScrollMotion();
 
   return (
     <div className="site-shell" id="top">
@@ -150,8 +198,8 @@ export function App() {
         </section>
 
         <section className="section feature-section" id="features">
-          <div className="section-inner" data-reveal>
-            <div className="feature-overview">
+          <div className="section-inner">
+            <div className="feature-overview" data-reveal>
               <header className="section-heading">
                 <p className="section-kicker">How it works</p>
                 <h2>Everything happens on the map.</h2>
@@ -176,7 +224,7 @@ export function App() {
               </div>
             </div>
 
-            <div className="connection-switcher">
+            <div className="connection-switcher" data-reveal>
               <div
                 className="mode-tabs"
                 role="group"
@@ -203,11 +251,11 @@ export function App() {
                 aria-live="polite"
                 className="connection-panel"
                 id="connection-panel"
-                key={connectionMode}
               >
-                <p>{activeMode.status}</p>
-                <h3>{activeMode.title}</h3>
-                <p>{activeMode.body}</p>
+                <div className="connection-panel-content" key={connectionMode}>
+                  <h3>{activeMode.title}</h3>
+                  <p>{activeMode.body}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -244,7 +292,7 @@ export function App() {
         </section>
       </main>
 
-      <footer className="site-footer">
+      <footer className="site-footer" data-reveal>
         <div className="footer-brand">
           <img src={iconUrl} alt="" width="36" height="36" />
           <span>Waypoint</span>
