@@ -3,8 +3,14 @@ import { useEffect, useLayoutEffect, useState } from "react";
 const links = {
   download: "https://github.com/raph559/WaypointApp/releases/latest",
   github: "https://github.com/raph559/WaypointApp",
-  setup: "https://github.com/raph559/WaypointApp#first-time-setup",
+  setup: "#setup",
+  fullSetup: "https://github.com/raph559/WaypointApp#first-time-setup",
+  sideStore: "https://docs.sidestore.io/docs/installation/install",
+  altStore: "https://faq.altstore.io/altstore-classic/altserver",
   localDevVPN: "https://apps.apple.com/app/id6755608044",
+  developerMode:
+    "https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device",
+  pairingTool: "https://github.com/jkcoxson/idevice_pair",
   contributing:
     "https://github.com/raph559/WaypointApp/blob/main/CONTRIBUTING.md",
   security: "https://github.com/raph559/WaypointApp/blob/main/SECURITY.md",
@@ -43,6 +49,47 @@ const connectionModes = {
     body: "Keep Wi-Fi off and follow the two Airplane Mode prompts.",
   },
 };
+
+const setupSteps = [
+  {
+    title: "Prepare your iPhone.",
+    body:
+      "Enable Developer Mode, restart when asked, then install LocalDevVPN and accept its VPN permission once.",
+    actions: [
+      { label: "Developer Mode help", href: links.developerMode },
+      { label: "Get LocalDevVPN", href: links.localDevVPN },
+    ],
+  },
+  {
+    title: "Choose an installer.",
+    body:
+      "Waypoint is an unsigned IPA. Use SideStore or AltStore Classic to sign and install it.",
+    actions: [
+      { label: "Install SideStore", href: links.sideStore },
+      { label: "Use AltStore", href: links.altStore },
+    ],
+  },
+  {
+    title: "Download Waypoint.",
+    body: "Get the latest IPA, then open it in SideStore or AltStore to install it.",
+    actions: [
+      { label: "Download IPA", href: links.download, primary: true },
+    ],
+  },
+  {
+    title: "Add your pairing record.",
+    body:
+      "When Waypoint asks, import directly from SideStore or select this iPhone's pairing file from Files.",
+    actions: [
+      { label: "Pairing file help", href: links.pairingTool },
+    ],
+  },
+  {
+    title: "Start on Wi-Fi.",
+    body:
+      "Choose a location, tap Start spoofing, and wait for Spoof Active. Airplane Mode is not needed.",
+  },
+];
 
 function useRevealMotion() {
   useLayoutEffect(() => {
@@ -261,32 +308,91 @@ export function App() {
           </div>
         </section>
 
-        <section className="section setup-section" id="setup">
+        <section
+          aria-labelledby="setup-title"
+          className="section setup-section"
+          id="setup"
+        >
           <div className="section-inner setup-inner" data-reveal>
-            <div>
+            <header className="setup-intro">
               <p className="section-kicker">One-time setup</p>
-              <h2>Before the first start.</h2>
+              <h2 id="setup-title">Get Waypoint on your iPhone.</h2>
               <p className="setup-copy">
-                Enable Developer Mode, add your iPhone&apos;s pairing record,
-                and install <a href={links.localDevVPN}>LocalDevVPN</a>. After
-                that, Waypoint runs on-device—without an account or analytics.
+                Most of the work happens once. After that, choose a place and
+                start directly from the map.
               </p>
+              <p className="setup-requirements">
+                iOS 26 <span aria-hidden="true">·</span> Developer Mode
+                <span aria-hidden="true">·</span> LocalDevVPN
+              </p>
+            </header>
 
-              <ul className="setup-facts" aria-label="Requirements">
-                <li>iOS 26</li>
-                <li>Developer Mode</li>
-                <li>LocalDevVPN required</li>
-                <li>Mobile data experimental</li>
-              </ul>
-            </div>
+            <div className="setup-guide">
+              <ol className="setup-steps">
+                {setupSteps.map((step, index) => (
+                  <li
+                    className="setup-step"
+                    key={step.title}
+                    style={{ "--setup-delay": `${index * 65}ms` }}
+                  >
+                    <span className="setup-step-index" aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3>{step.title}</h3>
+                      <p>{step.body}</p>
+                      {step.actions ? (
+                        <div className="setup-step-links">
+                          {step.actions.map((action) => (
+                            <a
+                              className={
+                                action.primary
+                                  ? "setup-step-link is-primary"
+                                  : "setup-step-link"
+                              }
+                              href={action.href}
+                              key={action.label}
+                            >
+                              {action.label}
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ol>
 
-            <div className="setup-actions">
-              <a className="button button-primary" href={links.download}>
-                Download IPA
-              </a>
-              <a className="button button-secondary" href={links.setup}>
-                Setup guide
-              </a>
+              <aside className="setup-security">
+                <strong>Keep your pairing record private.</strong>
+                <p>
+                  It is a trusted credential for your iPhone. Never upload it,
+                  paste it into an issue, or include it in logs or screenshots.
+                </p>
+              </aside>
+
+              <details className="setup-details">
+                <summary>
+                  Starting without Wi-Fi <span>Experimental</span>
+                </summary>
+                <ol>
+                  <li>Turn Wi-Fi off and confirm that 4G or 5G is working.</li>
+                  <li>Choose a location and tap Start on mobile data.</li>
+                  <li>
+                    Follow the Airplane Mode on and off prompts exactly, keeping
+                    Wi-Fi off.
+                  </li>
+                  <li>Wait until Waypoint confirms the spoof is active.</li>
+                </ol>
+              </details>
+
+              <p className="setup-help">
+                When finished, tap Stop before disconnecting LocalDevVPN. Need
+                more help?{" "}
+                <a href={links.fullSetup}>
+                  Read the full setup and troubleshooting guide.
+                </a>
+              </p>
             </div>
           </div>
         </section>
