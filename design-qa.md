@@ -5,6 +5,8 @@
 - Source visual truth: `/workspace/scratch/39bbb15352a6/generated_images/exec-dc0ecc7e-5244-4889-ba85-82cb62f379fe.png`
 - Focused journey-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-f521bcff-8e5f-4b19-a83c-907d4381bda3.png`
 - Focused setup-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-d09bb700-f578-4dfc-9145-ab10f207b729.png`
+- User-reported journey capture: `/workspace/scratch/39bbb15352a6/upload/image(42).png`
+- User-reported hero capture: `/workspace/scratch/39bbb15352a6/upload/image(43).png`
 - Rendered implementation: `https://raph559.github.io/WaypointApp/#setup` in the cloud browser
 - Implementation screenshot evidence: inline browser-rendered captures from the deployed GitHub Pages site; the browser runtime did not expose a persistent filesystem path
 - Viewport: 1363 × 936, desktop dark theme
@@ -23,7 +25,7 @@
 - Fonts and typography: system display and text faces preserve the source hierarchy, compact weight contrast, tight display tracking, and two-line hero/setup wraps.
 - Spacing and layout rhythm: the asymmetric hero, compact journey header, shared horizontal journey surface, rounded setup section, 2 px borders, and compact footer match the approved direction without the removed mode block.
 - Colors and tokens: charcoal, slate, warm off-white, mint, coral, and dusty blue stay balanced; generated-image backgrounds were normalized to their parent surfaces so no hard rectangular matte remains.
-- Image quality: the generated phone, wide map-route surface, and setup illustration use purpose-sized optimized raster assets. No placeholder, CSS-drawn, or handcrafted SVG artwork is used.
+- Image quality: the generated phone uses a dedicated 1181 × 1332 high-detail PNG; the route and setup artwork use lossless 1440 × 430 and 1040 × 960 PNG sources. All three loaded at their full natural dimensions. No placeholder, CSS-drawn, or handcrafted SVG artwork is used.
 - Copy and content: primary actions, installer links, pairing privacy, mobile-data steps, disconnect guidance, and supported platform language are accurate and concise. No deprecated cellular caveat label remains.
 - Icons and affordances: Phosphor icons are consistent, buttons and links have clear hover/focus behavior, and disclosure chevrons reflect open state.
 - Interactions: Setup navigation, both native disclosures, installer links, and stable latest-IPA links were exercised. Both disclosures opened successfully.
@@ -49,6 +51,9 @@
 6. Latest P2: the right side of the setup section read as a generic settings table and visually conflicted with the editorial title and illustration on the left.
    - Fixes: replaced circular badges, full-width separators, and the detached utility-link column with one quiet vertical rail, tabular `01–05` labels, compact editorial step blocks, and help links placed directly beneath their relevant copy.
    - Post-fix evidence: the focused source and deployed browser render were emitted together at 1363 × 936. The live section has five padded labels, no step borders, a 2 px timeline rail, 44 px action targets, no horizontal overflow, and no page-origin console errors.
+7. Latest P2: the live journey markers were visibly smaller than the approved mockup, the route and phone artwork were softened by aggressive WebP compression, and the wide setup title approached the column divider.
+   - Fixes: increased desktop markers from 54 × 54 to 64 × 64, re-exported the route and setup artwork from their lossless sources, replaced the cropped hero derivative with a dedicated high-detail render, and slightly reduced the wide-screen setup heading scale.
+   - Post-fix evidence: user captures and deployed browser captures were emitted together at 1363 × 936. The live markers measure 64 × 64 with 22.4 px numerals; the route, hero, and setup assets report natural dimensions of 1440 × 430, 1181 × 1332, and 1040 × 960; the setup title clears the divider by 57 px; horizontal overflow and page-origin console errors are both zero.
 
 ## Residual P3 polish
 
