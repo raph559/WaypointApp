@@ -16,6 +16,11 @@ workflows:
           include: true
 
     scripts:
+      - name: Check Swift source size
+        script: |
+          set -euo pipefail
+          bash scripts/check-swift-source-size.sh
+
       - name: Install XcodeGen
         script: |
           set -euo pipefail
