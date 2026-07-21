@@ -338,7 +338,7 @@ main:focus {
 
 .setup-aside h2 {
   margin-bottom: 28px;
-  font-size: clamp(3.1rem, 4.5vw, 4.75rem);
+  font-size: clamp(3.1rem, 4.1vw, 4.35rem);
   line-height: 0.98;
 }
 
@@ -438,11 +438,11 @@ main:focus {
   position: absolute;
   top: 23%;
   left: 0;
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
   color: var(--mint);
   background: var(--mint-deep);
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   transform: translateY(-50%);
 }
 
@@ -994,7 +994,7 @@ main:focus {
   .journey-step:nth-child(3) {
     position: static;
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 62px minmax(0, 1fr);
     align-items: center;
     width: 100%;
     min-height: 146px;
@@ -1013,6 +1013,9 @@ main:focus {
   }
 
   .journey-number {
+    width: 56px;
+    height: 56px;
+    font-size: 1.2rem;
     transform: none;
   }
 }
@@ -1099,7 +1102,7 @@ main:focus {
 
   .journey-step {
     position: static;
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 60px minmax(0, 1fr);
     width: 100%;
     min-height: 148px;
     gap: 16px;
@@ -1118,8 +1121,8 @@ main:focus {
   }
 
   .journey-number {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
   }
 
   .setup-section {

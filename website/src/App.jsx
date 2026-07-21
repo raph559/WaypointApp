@@ -30,9 +30,9 @@ const links = {
 };
 
 const iconUrl = `${import.meta.env.BASE_URL}waypoint-icon.png`;
-const heroPhoneUrl = `${import.meta.env.BASE_URL}waypoint-hero-phone.webp`;
-const setupIllustrationUrl = `${import.meta.env.BASE_URL}waypoint-setup-illustration.webp`;
-const journeySurfaceUrl = `${import.meta.env.BASE_URL}waypoint-journey-surface.webp`;
+const heroPhoneUrl = `${import.meta.env.BASE_URL}waypoint-hero-phone-v2.png`;
+const setupIllustrationUrl = `${import.meta.env.BASE_URL}waypoint-setup-illustration-v2.png`;
+const journeySurfaceUrl = `${import.meta.env.BASE_URL}waypoint-journey-surface-v2.png`;
 
 const proofPoints = [
   { label: "Open source", icon: Code },
