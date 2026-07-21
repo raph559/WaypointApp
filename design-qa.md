@@ -58,6 +58,9 @@
 8. Latest P2: the `01–05` setup numbers remained too small to anchor the timeline and read like metadata beside the step titles.
    - Fixes: increased the desktop numerals to a fluid 39.2–46.4 px range, widened their grid column, and realigned the timeline rail and colored nodes around the larger type. Dedicated 32.8 px and 29.6 px sizes preserve the hierarchy at the mobile breakpoints.
    - Post-fix evidence: the user capture and deployed setup render were emitted together at 1363 × 936. Each live desktop number measures 84 × 42 with a computed 42.93 px font size; the rail and nodes align with the enlarged numerals, title clearance remains 57 px, horizontal overflow is zero, and the page reports no console warnings or errors.
+9. User-directed maintenance pass: the 1,268-line stylesheet and 456-line page component made unrelated sections difficult to own and review.
+   - Fixes: split the stylesheet into 12 ordered source files with a 273-line maximum, decomposed the page into section and layout components with a 30-line `App.jsx`, scoped motion hooks to React refs, made setup tones explicit, and added ESLint, Stylelint, source-size limits, and a CI `npm run check` gate.
+   - Post-fix evidence: the production CSS bundle retained the exact same `index-CtOdwIcK.css` hash. Before/after browser measurements for the page, header, hero, journey, setup, footer, image dimensions, typography, and overflow were byte-for-byte identical at 1363 × 936. Navigation, the pairing disclosure, reveal state, and parallax setup still work; no page-origin console warnings or errors were reported. A clean `npm ci` and `npm run check` both pass locally.
 
 ## Residual P3 polish
 
@@ -72,6 +75,8 @@
 - [x] Replace the empty vertical journey with the approved compact horizontal composition
 - [x] Align the setup instructions with the editorial left-hand composition
 - [x] Verify reveal motion, reduced motion, disclosures, links, imagery, and overflow
+- [x] Keep authored CSS and JSX within enforced maintainability limits
+- [x] Run lint, source-size checks, and the production build in CI
 - [x] Build the production website bundle
 
 final result: passed
