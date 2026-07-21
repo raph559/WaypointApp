@@ -7,6 +7,7 @@
 - Focused setup-section source: `/workspace/scratch/39bbb15352a6/generated_images/exec-d09bb700-f578-4dfc-9145-ab10f207b729.png`
 - User-reported journey capture: `/workspace/scratch/39bbb15352a6/upload/image(42).png`
 - User-reported hero capture: `/workspace/scratch/39bbb15352a6/upload/image(43).png`
+- User-reported setup-number capture: `/workspace/scratch/39bbb15352a6/upload/image(44).png`
 - Rendered implementation: `https://raph559.github.io/WaypointApp/#setup` in the cloud browser
 - Implementation screenshot evidence: inline browser-rendered captures from the deployed GitHub Pages site; the browser runtime did not expose a persistent filesystem path
 - Viewport: 1363 × 936, desktop dark theme
@@ -54,6 +55,9 @@
 7. Latest P2: the live journey markers were visibly smaller than the approved mockup, the route and phone artwork were softened by aggressive WebP compression, and the wide setup title approached the column divider.
    - Fixes: increased desktop markers from 54 × 54 to 64 × 64, re-exported the route and setup artwork from their lossless sources, replaced the cropped hero derivative with a dedicated high-detail render, and slightly reduced the wide-screen setup heading scale.
    - Post-fix evidence: user captures and deployed browser captures were emitted together at 1363 × 936. The live markers measure 64 × 64 with 22.4 px numerals; the route, hero, and setup assets report natural dimensions of 1440 × 430, 1181 × 1332, and 1040 × 960; the setup title clears the divider by 57 px; horizontal overflow and page-origin console errors are both zero.
+8. Latest P2: the `01–05` setup numbers remained too small to anchor the timeline and read like metadata beside the step titles.
+   - Fixes: increased the desktop numerals to a fluid 39.2–46.4 px range, widened their grid column, and realigned the timeline rail and colored nodes around the larger type. Dedicated 32.8 px and 29.6 px sizes preserve the hierarchy at the mobile breakpoints.
+   - Post-fix evidence: the user capture and deployed setup render were emitted together at 1363 × 936. Each live desktop number measures 84 × 42 with a computed 42.93 px font size; the rail and nodes align with the enlarged numerals, title clearance remains 57 px, horizontal overflow is zero, and the page reports no console warnings or errors.
 
 ## Residual P3 polish
 
