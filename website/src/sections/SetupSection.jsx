@@ -1,8 +1,5 @@
-import {
-  CaretDown,
-  Info,
-  ShieldCheck,
-} from "@phosphor-icons/react";
+import { Info, ShieldCheck } from "@phosphor-icons/react";
+import { Disclosure } from "../components/Disclosure.jsx";
 import { TextLink } from "../components/TextLink.jsx";
 import { assets, links, setupSteps } from "../content/siteContent.js";
 
@@ -73,57 +70,36 @@ export function SetupSection() {
         </ol>
 
         <div className="setup-disclosures" data-reveal>
-          <details id="pairing-help">
-            <summary>
-              <span>Pairing file help</span>
-              <span className="summary-meta">
-                <span className="summary-label">Private</span>
-                <CaretDown
-                  aria-hidden="true"
-                  className="summary-chevron"
-                  size={18}
-                  weight="bold"
-                />
-              </span>
-            </summary>
-            <div className="details-content">
-              <ul>
-                <li>
-                  <strong>Using SideStore:</strong> choose Import with SideStore
-                  when Waypoint asks.
-                </li>
-                <li>
-                  <strong>Using Files:</strong> connect the unlocked iPhone by
-                  USB, trust the computer, create an RPPairing record, then save
-                  it to Files on the iPhone.
-                </li>
-              </ul>
-              <TextLink href={links.pairingTool}>Open the pairing tool</TextLink>
-            </div>
-          </details>
+          <Disclosure
+            id="pairing-help"
+            label="Pairing file help"
+            meta={<span className="summary-label">Private</span>}
+          >
+            <ul>
+              <li>
+                <strong>Using SideStore:</strong> choose Import with SideStore
+                when Waypoint asks.
+              </li>
+              <li>
+                <strong>Using Files:</strong> connect the unlocked iPhone by USB,
+                trust the computer, create an RPPairing record, then save it to
+                Files on the iPhone.
+              </li>
+            </ul>
+            <TextLink href={links.pairingTool}>Open the pairing tool</TextLink>
+          </Disclosure>
 
-          <details id="mobile-data-start">
-            <summary>
-              <span>Starting on mobile data</span>
-              <CaretDown
-                aria-hidden="true"
-                className="summary-chevron"
-                size={18}
-                weight="bold"
-              />
-            </summary>
-            <div className="details-content">
-              <ol>
-                <li>Turn Wi-Fi off and confirm that 4G or 5G is working.</li>
-                <li>Choose a location and tap Start on mobile data.</li>
-                <li>
-                  Follow the Airplane Mode on and off prompts exactly, keeping
-                  Wi-Fi off.
-                </li>
-                <li>Wait until Waypoint confirms the spoof is active.</li>
-              </ol>
-            </div>
-          </details>
+          <Disclosure id="mobile-data-start" label="Starting on mobile data">
+            <ol>
+              <li>Turn Wi-Fi off and confirm that 4G or 5G is working.</li>
+              <li>Choose a location and tap Start on mobile data.</li>
+              <li>
+                Follow the Airplane Mode on and off prompts exactly, keeping
+                Wi-Fi off.
+              </li>
+              <li>Wait until Waypoint confirms the spoof is active.</li>
+            </ol>
+          </Disclosure>
         </div>
 
         <p className="setup-help" data-reveal>

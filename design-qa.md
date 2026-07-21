@@ -65,6 +65,9 @@
 10. Latest P2: the desktop hero still inherited a 108 px copy offset, leaving roughly 200 px of dead space between the navigation and the eyebrow in the user capture.
    - Fixes: removed the copy offset entirely, aligned copy and artwork at the top of the hero grid, and set deliberate top padding of 28 px on desktop and narrow mobile layouts, with 36 px at the stacked tablet breakpoint.
    - Post-fix evidence: the user capture and corrected browser render were emitted together in one comparison pass. At 1363 × 936, the live header ends at y=104 and the eyebrow and artwork both begin at y=132, producing a measured 28 px content gap instead of the former structural offset. Horizontal overflow is zero, the Setup navigation still reaches `#setup`, and no page-origin console warnings or errors were reported. The source capture is a 1579 × 347 crop, so comparison focused on the shared top-of-page region rather than absolute viewport scaling.
+11. Latest interaction polish: the setup disclosures opened and closed instantly because native `<details>` did not animate their content height.
+   - Fixes: replaced the two disclosure triggers with a reusable accessible accordion component, added reversible grid-height, opacity, content-offset, and chevron transitions, and retained a near-instant reduced-motion path through the existing global preference rule.
+   - Post-fix evidence: both accordions expose synchronized `aria-expanded`, `aria-controls`, `aria-hidden`, and `inert` states. Mouse opening/closing and keyboard activation were exercised in the cloud browser; the panels transition over 360 ms, settle at the expected open and closed heights, and produce no page-origin console warnings or errors. The production lint, source-size, and build checks pass.
 
 ## Residual P3 polish
 
