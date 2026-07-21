@@ -8,12 +8,13 @@
 - User-reported journey capture: `/workspace/scratch/39bbb15352a6/upload/image(42).png`
 - User-reported hero capture: `/workspace/scratch/39bbb15352a6/upload/image(43).png`
 - User-reported setup-number capture: `/workspace/scratch/39bbb15352a6/upload/image(44).png`
+- User-reported hero-spacing capture: `/workspace/scratch/39bbb15352a6/upload/image(45).png`
 - Rendered implementation: `https://raph559.github.io/WaypointApp/#setup` in the cloud browser
 - Implementation screenshot evidence: inline browser-rendered captures from the deployed GitHub Pages site; the browser runtime did not expose a persistent filesystem path
 - Viewport: 1363 × 936, desktop dark theme
 - States reviewed: hero at rest, map journey after scroll reveal, setup section, both setup disclosures opened
 - Full-view evidence: the complete source mockup was reviewed alongside browser captures covering the full implemented page in three contiguous regions
-- Focused comparison evidence: source and implementation were emitted together for the hero, revised horizontal map journey, and revised setup timeline regions
+- Focused comparison evidence: source and implementation were emitted together for the hero, revised horizontal map journey, revised setup timeline, and final hero-spacing regions
 
 ## Findings
 
@@ -61,6 +62,9 @@
 9. User-directed maintenance pass: the 1,268-line stylesheet and 456-line page component made unrelated sections difficult to own and review.
    - Fixes: split the stylesheet into 12 ordered source files with a 273-line maximum, decomposed the page into section and layout components with a 30-line `App.jsx`, scoped motion hooks to React refs, made setup tones explicit, and added ESLint, Stylelint, source-size limits, and a CI `npm run check` gate.
    - Post-fix evidence: the production CSS bundle retained the exact same `index-CtOdwIcK.css` hash. Before/after browser measurements for the page, header, hero, journey, setup, footer, image dimensions, typography, and overflow were byte-for-byte identical at 1363 × 936. Navigation, the pairing disclosure, reveal state, and parallax setup still work; no page-origin console warnings or errors were reported. A clean `npm ci` and `npm run check` both pass locally.
+10. Latest P2: the desktop hero still inherited a 108 px copy offset, leaving roughly 200 px of dead space between the navigation and the eyebrow in the user capture.
+   - Fixes: removed the copy offset entirely, aligned copy and artwork at the top of the hero grid, and set deliberate top padding of 28 px on desktop and narrow mobile layouts, with 36 px at the stacked tablet breakpoint.
+   - Post-fix evidence: the user capture and corrected browser render were emitted together in one comparison pass. At 1363 × 936, the live header ends at y=104 and the eyebrow and artwork both begin at y=132, producing a measured 28 px content gap instead of the former structural offset. Horizontal overflow is zero, the Setup navigation still reaches `#setup`, and no page-origin console warnings or errors were reported. The source capture is a 1579 × 347 crop, so comparison focused on the shared top-of-page region rather than absolute viewport scaling.
 
 ## Residual P3 polish
 
