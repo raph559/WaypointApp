@@ -10,6 +10,8 @@
 .hero-copy {
   position: relative;
   z-index: 2;
+  align-self: start;
+  margin-top: clamp(72px, 8vw, 108px);
 }
 
 .eyebrow,
@@ -147,4 +149,3 @@
   filter: drop-shadow(0 26px 42px rgba(0, 0, 0, 0.22));
   will-change: transform;
 }
-

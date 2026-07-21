@@ -6,11 +6,12 @@
   .hero {
     grid-template-columns: 1fr;
     min-height: auto;
-    padding-top: 72px;
+    padding-top: 48px;
   }
 
   .hero-copy {
     max-width: 720px;
+    margin-top: 0;
   }
 
   .hero-artwork img {
